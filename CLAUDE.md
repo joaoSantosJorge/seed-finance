@@ -2,6 +2,8 @@
 
 > **This document is the single source of truth for building Seed Finance.**
 > Claude: Always read this before implementing any feature.
+> before writing code, write the plan in a file and put it in /development. Then follow the steps on the file
+> before commit and push, run tests
 
 ---
 
@@ -184,17 +186,37 @@ See `docs/01_architecture_analysis.md` for the full analysis.
 | **CCTP TokenMessenger** | `0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5` |
 | **CCTP MessageTransmitter** | `0x7865fAfC2db2093669d92c0F33AeEF291086BEFD` |
 
-### Circle SDK Packages
+### Smart Contract Development (Foundry)
 
 ```bash
-# Core packages for development
+# Install Foundry (https://getfoundry.sh/)
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
+
+# In /contracts directory
+forge install foundry-rs/forge-std
+forge install OpenZeppelin/openzeppelin-contracts
+
+# Build & Test
+forge build        # Compile contracts
+forge test         # Run tests
+forge test -vvv    # Verbose output
+forge script       # Run deployment scripts
+
+# Configuration in foundry.toml:
+# - Solidity 0.8.26
+# - Optimizer enabled (200 runs)
+# - via_ir enabled for production
+# - EVM version: cancun
+```
+
+### Circle SDK Packages (Backend)
+
+```bash
+# Core packages for backend Circle integration
 npm install @circle-fin/developer-controlled-wallets  # Wallets SDK
 npm install @circle-fin/smart-contract-platform       # Contracts SDK
-
-# Ethereum/Base development
-npm install ethers@^6.0.0
-npm install @openzeppelin/contracts
-npm install hardhat
+npm install ethers@^6.0.0                             # Ethereum library
 ```
 
 ---
@@ -253,13 +275,39 @@ npm install hardhat
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Contract Project Structure
+
+```
+contracts/
+├── foundry.toml                 # Foundry configuration
+├── src/
+│   ├── base/                    # Core contracts
+│   │   ├── LiquidityPool.sol    # ERC-4626 vault (IMPLEMENTED)
+│   │   └── TreasuryManager.sol  # Multi-strategy manager (IMPLEMENTED)
+│   ├── interfaces/
+│   │   └── ITreasuryStrategy.sol # Strategy interface
+│   └── strategies/
+│       ├── BaseTreasuryStrategy.sol  # Abstract base
+│       └── USYCStrategy.sol          # USYC yield strategy
+├── test/
+│   ├── LiquidityPool.t.sol      # Pool tests
+│   ├── TreasuryManager.t.sol    # Manager tests
+│   └── mocks/
+│       ├── MockUSDC.sol
+│       └── MockStrategy.sol
+└── lib/
+    ├── forge-std/
+    └── openzeppelin-contracts/
+```
+
 ### Deployment Order
 
 1. Deploy `InvoiceRegistry.sol`
 2. Deploy `LiquidityPool.sol` (pass USDC address)
-3. Deploy `ExecutionPool.sol` (pass USDC, InvoiceRegistry addresses)
-4. Deploy `PaymentRouter.sol` (pass InvoiceRegistry, ExecutionPool, LiquidityPool)
-5. Configure access control roles
+3. Deploy `TreasuryManager.sol` (pass USDC, LiquidityPool addresses)
+4. Deploy `ExecutionPool.sol` (pass USDC, InvoiceRegistry addresses)
+5. Deploy `PaymentRouter.sol` (pass InvoiceRegistry, ExecutionPool, LiquidityPool)
+6. Configure access control roles and link contracts
 
 ### 1. LiquidityPool.sol — ERC-4626 Vault
 
@@ -1032,6 +1080,7 @@ BASESCAN_API_KEY=
 | 2026-01-31 | USDC 6 decimals | Standard on Base (vs 18 on Arc) |
 | 2026-01-31 | USYC treasury optional | Can add later if utilization is low, not critical for MVP |
 | 2026-01-31 | Skip Arc for production | Arc was hackathon-driven, not needed for core product value |
+| 2026-01-31 | Foundry over Hardhat | Better for pure Solidity projects, faster compilation, built-in fuzzing, superior testing DX |
 
 ---
 
