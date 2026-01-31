@@ -955,6 +955,379 @@ export class CircleService {
 
 ---
 
+## USYC Treasury Yield Strategy
+
+### Dual-Yield Architecture
+
+Seed Finance implements a dual-yield strategy using USYC (Hashnote's tokenized US Treasury product) to maximize LP returns on idle capital.
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DUAL-YIELD STRATEGY                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  LAYER 1: BASE YIELD (Treasury Rate)                                        │
+│  ────────────────────────────────────                                        │
+│  Idle USDC in Arc Pool                                                       │
+│         │                                                                    │
+│         ▼                                                                    │
+│  Swap USDC → USYC (tokenized T-Bills)                                       │
+│         │                                                                    │
+│         ▼                                                                    │
+│  Earn ~4-5% APY (risk-free Treasury rate)                                   │
+│                                                                              │
+│  LAYER 2: PROTOCOL YIELD (Invoice Financing)                                │
+│  ────────────────────────────────────────────                                │
+│  When invoice needs funding:                                                 │
+│         │                                                                    │
+│         ▼                                                                    │
+│  Redeem USYC → USDC (instant liquidity)                                     │
+│         │                                                                    │
+│         ▼                                                                    │
+│  Fund invoice, earn 4-10% financing spread                                  │
+│                                                                              │
+│  COMBINED YIELD                                                              │
+│  ──────────────                                                              │
+│  Base (USYC):     ~4-5% APY on idle funds                                   │
+│  Protocol:        ~4-10% APY on deployed funds                              │
+│  Blended:         ~8-14% APY (depending on utilization)                     │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Capital State Machine
+
+```
+                    ┌─────────────────┐
+                    │   LP Deposits   │
+                    │     USDC        │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │  IDLE STATE     │
+                    │  USDC → USYC    │◄─────────────┐
+                    │  (Earning ~4%)  │              │
+                    └────────┬────────┘              │
+                             │                       │
+               Invoice approved                      │
+                             │                       │
+                             ▼                       │
+                    ┌─────────────────┐              │
+                    │ DEPLOYED STATE  │              │
+                    │  USYC → USDC    │              │
+                    │  Fund invoice   │              │
+                    │ (Earning ~8%)   │              │
+                    └────────┬────────┘              │
+                             │                       │
+               Invoice repaid                        │
+                             │                       │
+                             ▼                       │
+                    ┌─────────────────┐              │
+                    │   RETURNED      │              │
+                    │ Principal+Yield │──────────────┘
+                    └─────────────────┘
+```
+
+### Smart Contract: TreasuryManager.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+interface IUSYC {
+    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
+    function convertToAssets(uint256 shares) external view returns (uint256);
+    function convertToShares(uint256 assets) external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+}
+
+/**
+ * @title Treasury Manager
+ * @notice Manages idle USDC by depositing into USYC for Treasury yield
+ * @dev Integrates with Hashnote's USYC for tokenized T-Bill exposure
+ */
+contract TreasuryManager is AccessControl {
+    using SafeERC20 for IERC20;
+
+    bytes32 public constant POOL_ROLE = keccak256("POOL_ROLE");
+
+    IERC20 public immutable usdc;
+    IUSYC public immutable usyc;
+
+    // Minimum USDC to keep liquid (for immediate funding needs)
+    uint256 public liquidityBuffer;
+
+    // Tracking
+    uint256 public totalDeposited;      // USDC deposited to USYC
+    uint256 public totalYieldEarned;    // Cumulative Treasury yield
+
+    // Events
+    event DepositedToTreasury(uint256 usdcAmount, uint256 usycShares);
+    event RedeemedFromTreasury(uint256 usycShares, uint256 usdcAmount);
+    event YieldHarvested(uint256 yieldAmount);
+    event LiquidityBufferUpdated(uint256 newBuffer);
+
+    constructor(
+        address _usdc,
+        address _usyc,
+        uint256 _liquidityBuffer
+    ) {
+        usdc = IERC20(_usdc);
+        usyc = IUSYC(_usyc);
+        liquidityBuffer = _liquidityBuffer;
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
+
+    /**
+     * @notice Deposit idle USDC into USYC for Treasury yield
+     * @param amount USDC amount to deposit
+     */
+    function depositToTreasury(uint256 amount) external onlyRole(POOL_ROLE) returns (uint256 shares) {
+        require(amount > 0, "Amount must be > 0");
+
+        usdc.safeTransferFrom(msg.sender, address(this), amount);
+        usdc.approve(address(usyc), amount);
+
+        shares = usyc.deposit(amount, address(this));
+        totalDeposited += amount;
+
+        emit DepositedToTreasury(amount, shares);
+    }
+
+    /**
+     * @notice Redeem USYC to USDC for invoice funding
+     * @param usdcNeeded Amount of USDC needed
+     */
+    function redeemForFunding(uint256 usdcNeeded) external onlyRole(POOL_ROLE) returns (uint256 actualUsdc) {
+        uint256 sharesNeeded = usyc.convertToShares(usdcNeeded);
+        uint256 sharesAvailable = usyc.balanceOf(address(this));
+
+        require(sharesAvailable >= sharesNeeded, "Insufficient USYC balance");
+
+        actualUsdc = usyc.redeem(sharesNeeded, msg.sender, address(this));
+
+        // Calculate yield earned on this portion
+        uint256 originalDeposit = (totalDeposited * sharesNeeded) / (sharesAvailable + sharesNeeded);
+        if (actualUsdc > originalDeposit) {
+            totalYieldEarned += (actualUsdc - originalDeposit);
+        }
+        totalDeposited -= originalDeposit;
+
+        emit RedeemedFromTreasury(sharesNeeded, actualUsdc);
+    }
+
+    /**
+     * @notice Get current USYC value in USDC terms
+     */
+    function getTreasuryValue() public view returns (uint256) {
+        uint256 shares = usyc.balanceOf(address(this));
+        return usyc.convertToAssets(shares);
+    }
+
+    /**
+     * @notice Get unrealized yield (current value - deposited)
+     */
+    function getUnrealizedYield() public view returns (uint256) {
+        uint256 currentValue = getTreasuryValue();
+        if (currentValue > totalDeposited) {
+            return currentValue - totalDeposited;
+        }
+        return 0;
+    }
+
+    /**
+     * @notice Harvest yield without redeeming principal
+     */
+    function harvestYield() external onlyRole(POOL_ROLE) returns (uint256 yield) {
+        yield = getUnrealizedYield();
+        if (yield > 0) {
+            uint256 yieldShares = usyc.convertToShares(yield);
+            usyc.redeem(yieldShares, msg.sender, address(this));
+            totalYieldEarned += yield;
+            emit YieldHarvested(yield);
+        }
+    }
+
+    /**
+     * @notice Update liquidity buffer
+     */
+    function setLiquidityBuffer(uint256 newBuffer) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        liquidityBuffer = newBuffer;
+        emit LiquidityBufferUpdated(newBuffer);
+    }
+}
+```
+
+### Updated LiquidityPool.sol (with USYC)
+
+```solidity
+// Key additions to LiquidityPool.sol
+
+contract LiquidityPool is ERC4626, AccessControl {
+    // ... existing code ...
+
+    TreasuryManager public treasuryManager;
+
+    // Auto-deposit threshold (deposit to USYC when idle > threshold)
+    uint256 public autoDepositThreshold = 100_000 * 1e6; // 100k USDC
+
+    /**
+     * @notice Total assets including USYC position
+     */
+    function totalAssets() public view override returns (uint256) {
+        uint256 liquidUsdc = usdc.balanceOf(address(this));
+        uint256 treasuryValue = treasuryManager.getTreasuryValue();
+        return liquidUsdc + treasuryValue - totalDeployed;
+    }
+
+    /**
+     * @notice Available liquidity (liquid USDC + redeemable USYC)
+     */
+    function availableLiquidity() public view returns (uint256) {
+        return totalAssets() - totalDeployed;
+    }
+
+    /**
+     * @notice Optimize idle capital by depositing to USYC
+     * @dev Called periodically by keeper or after deposits
+     */
+    function optimizeIdleCapital() external {
+        uint256 liquidUsdc = usdc.balanceOf(address(this));
+        uint256 buffer = treasuryManager.liquidityBuffer();
+
+        if (liquidUsdc > buffer + autoDepositThreshold) {
+            uint256 toDeposit = liquidUsdc - buffer;
+            usdc.approve(address(treasuryManager), toDeposit);
+            treasuryManager.depositToTreasury(toDeposit);
+        }
+    }
+
+    /**
+     * @notice Route to Sui, redeeming from USYC if needed
+     */
+    function routeToSui(
+        uint256 amount,
+        bytes32 invoiceId
+    ) external onlyRole(ROUTER_ROLE) returns (bool) {
+        uint256 liquidUsdc = usdc.balanceOf(address(this));
+
+        // If not enough liquid USDC, redeem from USYC
+        if (liquidUsdc < amount) {
+            uint256 toRedeem = amount - liquidUsdc;
+            treasuryManager.redeemForFunding(toRedeem);
+        }
+
+        totalDeployed += amount;
+        emit LiquidityRouted(amount, invoiceId, 0);
+        return true;
+    }
+}
+```
+
+### Yield Calculation Example
+
+```
+Scenario: $10M pool, 60% average utilization
+
+IDLE CAPITAL ($4M):
+├── Deposited in USYC
+├── Treasury Rate: 4.5% APY
+└── Annual Yield: $180,000
+
+DEPLOYED CAPITAL ($6M):
+├── Financing invoices
+├── Protocol Spread: 8% APY (average)
+└── Annual Yield: $480,000
+
+TOTAL YIELD:
+├── Combined: $660,000
+├── Effective APY: 6.6% (blended)
+└── LP Share (80%): $528,000 = 5.28% net APY
+
+COMPARISON:
+├── Pure DeFi Lending: 3-5% APY
+├── Traditional SCF: 5-8% APY
+└── Seed Finance: 5-8% APY (with Treasury backing)
+
+ADVANTAGE: Risk-adjusted returns are higher because:
+├── Idle funds earn risk-free Treasury rate
+├── No opportunity cost on uninvested capital
+└── LPs get yield even at low utilization
+```
+
+### Integration with Arc Ecosystem
+
+```
+┌────────────────────────────────────────────────────────────────────────────┐
+│                        ARC TREASURY INTEGRATION                             │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  LP Deposit Flow:                                                           │
+│  ────────────────                                                           │
+│  USDC (any chain) → Bridge Kit → Arc LiquidityPool                         │
+│                                      │                                      │
+│                                      ▼                                      │
+│                               TreasuryManager                               │
+│                                      │                                      │
+│                         ┌────────────┴────────────┐                        │
+│                         │                         │                         │
+│                         ▼                         ▼                         │
+│                    Keep Buffer              Deposit to USYC                 │
+│                    (liquid USDC)            (Treasury yield)                │
+│                                                                             │
+│  Invoice Funding Flow:                                                      │
+│  ─────────────────────                                                      │
+│  Invoice Approved → Check liquid USDC                                       │
+│                         │                                                   │
+│              ┌──────────┴──────────┐                                       │
+│              │                     │                                        │
+│         Sufficient            Insufficient                                  │
+│              │                     │                                        │
+│              ▼                     ▼                                        │
+│         Use liquid            Redeem USYC                                   │
+│           USDC                    │                                         │
+│              │                     │                                        │
+│              └──────────┬──────────┘                                       │
+│                         │                                                   │
+│                         ▼                                                   │
+│                  Route to Sui (CCTP)                                        │
+│                         │                                                   │
+│                         ▼                                                   │
+│                   Fund Invoice                                              │
+│                                                                             │
+└────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Key Benefits
+
+| Benefit | Description |
+|---------|-------------|
+| **No Idle Capital** | Every dollar earns yield, even when not financing invoices |
+| **Risk-Free Base** | Treasury rate is government-backed, minimal risk |
+| **Instant Liquidity** | USYC redeems to USDC instantly for funding needs |
+| **Competitive APY** | 8-14% combined vs 3-8% for pure DeFi |
+| **Low Utilization Protection** | LPs earn even when few invoices are financed |
+
+### USYC Contract Addresses (Mainnet)
+
+```
+Ethereum Mainnet:
+├── USYC Token: 0x136471a34f6ef19fE571EFFC1CA711fdb8E49f2b
+└── USYC Minter: [TBD based on Hashnote docs]
+
+Arc (when available):
+├── USYC Token: [To be deployed]
+└── Integration via Circle ecosystem
+```
+
+---
+
 ## Development Phases
 
 ### Phase 1: Foundation (Days 1-2)
@@ -1035,6 +1408,10 @@ SUI_PRIVATE_KEY=
 ARC_RPC_URL=
 ARC_PRIVATE_KEY=
 
+# USYC (Treasury)
+USYC_TOKEN_ADDRESS=0x136471a34f6ef19fE571EFFC1CA711fdb8E49f2b
+USYC_LIQUIDITY_BUFFER=100000000000  # 100k USDC in 6 decimals
+
 # Database
 DATABASE_URL=postgresql://...
 
@@ -1053,12 +1430,13 @@ NEXT_PUBLIC_SUI_NETWORK=devnet
 | 2026-01-31 | Use Arc for liquidity | Circle prize requirement, native USDC, EVM familiar |
 | 2026-01-31 | Circle Wallets for companies | No wallet UX for business users |
 | 2026-01-31 | CCTP for bridging | Circle's own bridge, best integration with Arc |
+| 2026-01-31 | USYC for idle treasury | Dual-yield strategy: Treasury rate + invoice financing |
 
 ---
 
 ## One-Liner
 
-> "Seed Finance is a non-custodial reverse factoring protocol where USDC liquidity is chain-abstracted via Arc, invoices execute on Sui, and payouts settle through Circle Gateway — companies never touch crypto."
+> "Seed Finance is a non-custodial reverse factoring protocol with dual-yield strategy: idle USDC earns Treasury yield via USYC while deployed capital finances invoices — all chain-abstracted via Arc, executed on Sui, settled through Circle Gateway. Companies never touch crypto, LPs earn 8-14% APY."
 
 ---
 
