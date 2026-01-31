@@ -1,8 +1,8 @@
 # Seed Finance
 
-**Decentralized Reverse Factoring Protocol**
+**Decentralized Reverse Factoring Protocol on Base**
 
-Supply chain finance infrastructure where USDC liquidity is chain-abstracted via Arc, invoices execute on Sui, and payouts settle through Circle Gateway.
+Supply chain finance infrastructure where LPs deposit USDC, invoices execute on-chain, and payouts settle through Circle Gateway.
 
 ---
 
@@ -20,48 +20,48 @@ Reverse factoring (also called supply chain finance) allows suppliers to get pai
 ## Architecture
 
 ```
-                    ┌─────────────────────┐
-                    │  Liquidity Providers │
-                    │   (Deposit USDC)     │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-┌──────────────────────────────────────────────────────┐
-│                    ARC (Circle L1)                    │
-│          Chain-Abstracted USDC Liquidity Hub         │
-└──────────────────────────┬───────────────────────────┘
-                           │
-              ┌────────────┴────────────┐
-              │    Cross-Chain Bridge    │
-              │     (Circle CCTP)        │
-              └────────────┬────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────┐
-│                   SUI BLOCKCHAIN                      │
-│           Credit Execution Layer (Move)              │
-│    Invoice Objects | Approvals | Funding Logic       │
-└──────────────────────────┬───────────────────────────┘
-                           │
-                           ▼
-┌──────────────────────────────────────────────────────┐
-│                  CIRCLE GATEWAY                       │
-│           USDC ↔ Fiat Settlement                     │
-│    Supplier bank payouts | Buyer repayments          │
-└──────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    SEED FINANCE (BASE L2)                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                  Liquidity Providers                       │  │
+│  │                   (Deposit USDC)                           │  │
+│  └─────────────────────────┬─────────────────────────────────┘  │
+│                            │                                     │
+│                            ▼                                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                LiquidityPool.sol (ERC-4626)                │  │
+│  │           LP Vault — sfUSDC share tokens                   │  │
+│  └─────────────────────────┬─────────────────────────────────┘  │
+│                            │                                     │
+│                            ▼                                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │    InvoiceRegistry │ ExecutionPool │ PaymentRouter         │  │
+│  │        Invoice lifecycle + funding + repayment             │  │
+│  └─────────────────────────┬─────────────────────────────────┘  │
+│                            │                                     │
+│                            ▼                                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                   CIRCLE GATEWAY                           │  │
+│  │             USDC ↔ Fiat Settlement                         │  │
+│  │      Supplier payouts │ Buyer repayments                   │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## How It Works
 
-1. **LPs deposit USDC** on Arc (from any chain)
-2. **Supplier creates invoice** on Sui
-3. **Buyer approves invoice** on Sui
-4. **Capital routes from Arc → Sui** to fund invoice
+1. **LPs deposit USDC** to LiquidityPool on Base → receive sfUSDC shares
+2. **Supplier creates invoice** on Base
+3. **Buyer approves invoice** on Base
+4. **Invoice funded** from LiquidityPool → USDC to Supplier
 5. **Supplier receives fiat** via Circle Gateway (no crypto UX)
 6. **Buyer repays at maturity** via Circle Gateway
-7. **Capital returns to Arc** with yield for LPs
+7. **Yield distributed** — LP share value increases
 
 ---
 
@@ -69,9 +69,8 @@ Reverse factoring (also called supply chain finance) allows suppliers to get pai
 
 | Layer | Technology |
 |-------|------------|
-| Liquidity Hub | Arc (Circle L1) — Solidity |
-| Credit Logic | Sui — Move |
-| Bridging | Circle CCTP |
+| Blockchain | Base L2 (Coinbase) |
+| Contracts | Solidity (ERC-4626 vault) |
 | Fiat Rails | Circle Gateway |
 | User Wallets | Circle Wallets |
 | Frontend | Next.js 14, RainbowKit |
@@ -83,14 +82,19 @@ Reverse factoring (also called supply chain finance) allows suppliers to get pai
 ```
 seed-finance/
 ├── contracts/
-│   ├── arc/          # Solidity contracts for Arc
-│   └── sui/          # Move contracts for Sui
+│   └── base/             # Solidity contracts for Base
+│       ├── LiquidityPool.sol
+│       ├── InvoiceRegistry.sol
+│       ├── ExecutionPool.sol
+│       └── PaymentRouter.sol
 ├── apps/
-│   ├── web/          # Next.js frontend
-│   └── api/          # Backend API
+│   ├── web/              # Next.js frontend
+│   └── api/              # Backend API
 ├── packages/
-│   └── shared/       # Shared types and utilities
-├── dashboard/        # Strategy visualization
+│   └── shared/           # Shared types and utilities
+├── docs/
+│   ├── 01_architecture_analysis.md
+│   └── BASE-REFERENCE.md
 └── strategic-documents/
 ```
 
@@ -109,33 +113,51 @@ npm run dev
 npm run test
 
 # Deploy contracts
-npm run deploy:arc-testnet
-npm run deploy:sui-devnet
+npm run deploy:base-sepolia
 ```
 
 ---
 
-## Circle Prize Submission
+## Circle Integration
 
-This project targets:
+This project uses Circle tools for seamless fiat integration:
 
-- **Best Chain-Abstracted USDC Apps Using Arc as a Liquidity Hub** ($5,000)
-- **Build Global Payouts and Treasury Systems with USDC on Arc** ($2,500)
+- **Circle Wallets** — Programmable wallets for buyers/suppliers
+- **Circle Gateway** — Fiat on/off-ramp for settlements
+- **USDC** — All internal operations in native USDC
 
-### Required Circle Tools Used:
-- Arc — Liquidity aggregation
-- Circle Gateway — Fiat on/off-ramp
-- Circle Wallets — User abstraction
-- USDC — All internal operations
-- Bridge Kit — Multi-chain LP deposits
+---
+
+## Why Base?
+
+We chose Base for production deployment because:
+
+- **Simple** — Single-chain deployment, single audit scope
+- **Fast** — ~2 second finality, $0.001 per transaction
+- **Circle-native** — Deep integration with Circle ecosystem
+- **Account Abstraction** — 87% of ERC-4337 activity
+
+See [Architecture Analysis](./docs/01_architecture_analysis.md) for the full decision rationale.
 
 ---
 
 ## Documentation
 
 - [Technical Implementation Guide](./CLAUDE.md) — Detailed specs
+- [Architecture Analysis](./docs/01_architecture_analysis.md) — Why Base-only
+- [Base Reference](./docs/BASE-REFERENCE.md) — Network details
 - [Strategy Document](./strategic-documents/reverse-factoring-blockchain-strategy.md)
-- [Interactive Dashboard](./dashboard/) — Visual architecture
+
+---
+
+## Implemented Features
+
+- [x] Base-only architecture analysis
+- [ ] Smart contract implementation
+- [ ] Circle Wallet integration
+- [ ] Circle Gateway integration
+- [ ] Frontend dashboards
+- [ ] End-to-end testing
 
 ---
 

@@ -7,17 +7,20 @@
 
 ## Project Overview
 
-**Seed Finance** is a decentralized reverse factoring protocol that:
-- Uses **Sui** as the credit execution layer (invoice logic, approvals, funding)
-- Uses **Arc** (Circle's L1) as the chain-abstracted USDC liquidity hub
+**Seed Finance** is a decentralized reverse factoring protocol built on **Base L2**:
+- **Single-chain deployment** on Base for maximum simplicity and speed to market
 - Uses **Circle Gateway** for fiat on/off-ramp settlement
 - Uses **Circle Wallets** for user abstraction (no wallet management for companies)
+- Uses **CCTP** for cross-chain LP deposits (optional, Phase 2)
 
-**Target Prizes:**
-1. 🏆 **Best Chain-Abstracted USDC Apps Using Arc as a Liquidity Hub** — $5,000
-2. 🏆 **Build Global Payouts and Treasury Systems with USDC on Arc** — $2,500
+**Architecture Decision:** We chose Base-only deployment over dual-chain (Arc + Base) for production because:
+- 2-3x faster development time
+- 50% reduction in audit scope
+- Eliminates bridge risk entirely
+- All Circle tools (Gateway, Wallets) work natively on Base
+- Can add multi-chain LP deposits via CCTP in Phase 2 if needed
 
-**Required Circle Tools:** Arc, Circle Gateway, USDC, Circle Wallets, Bridge Kit
+See `docs/01_architecture_analysis.md` for the full analysis.
 
 ---
 
@@ -27,44 +30,28 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                         SEED FINANCE ARCHITECTURE                            │
+│                     SEED FINANCE ARCHITECTURE (BASE-ONLY)                    │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │                    LIQUIDITY PROVIDERS                               │   │
-│  │         (Deposit USDC from Ethereum, Polygon, Base, etc.)           │   │
+│  │                   (Deposit USDC on Base)                            │   │
 │  └────────────────────────────┬────────────────────────────────────────┘   │
 │                               │                                              │
 │                               ▼                                              │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                        ARC (Circle L1)                               │   │
+│  │                        BASE L2 (Coinbase)                           │   │
 │  │  ┌─────────────────────────────────────────────────────────────┐   │   │
-│  │  │                   LIQUIDITY HUB                              │   │   │
-│  │  │  • Aggregates USDC from all chains                          │   │   │
-│  │  │  • Single liquidity surface                                  │   │   │
-│  │  │  • LP accounting & yield distribution                        │   │   │
-│  │  │  • Routes capital to Sui on demand                          │   │   │
+│  │  │                   LIQUIDITY LAYER                            │   │   │
+│  │  │  • LiquidityPool.sol — ERC-4626 vault for LP deposits       │   │   │
+│  │  │  • TreasuryManager.sol — USYC yield optimization (optional) │   │   │
 │  │  └─────────────────────────────────────────────────────────────┘   │   │
 │  │                                                                      │   │
 │  │  ┌─────────────────────────────────────────────────────────────┐   │   │
-│  │  │               ARC SMART CONTRACTS (EVM)                      │   │   │
-│  │  │  • LiquidityPool.sol — LP deposits, share tokens            │   │   │
-│  │  │  • YieldVault.sol — ERC-4626 yield aggregation              │   │   │
-│  │  │  • BridgeRouter.sol — Routes USDC to Sui                    │   │   │
-│  │  └─────────────────────────────────────────────────────────────┘   │   │
-│  └────────────────────────────┬────────────────────────────────────────┘   │
-│                               │                                              │
-│              Cross-chain message (Wormhole / Circle CCTP)                   │
-│                               │                                              │
-│                               ▼                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                          SUI BLOCKCHAIN                              │   │
-│  │  ┌─────────────────────────────────────────────────────────────┐   │   │
-│  │  │               CREDIT EXECUTION LAYER (Move)                  │   │   │
-│  │  │  • invoice.move — Invoice objects, lifecycle                │   │   │
-│  │  │  • execution_pool.move — Temporary USDC holding             │   │   │
-│  │  │  • payment_router.move — Funding & repayment logic          │   │   │
-│  │  │  • credit_oracle.move — On-chain credit scoring             │   │   │
+│  │  │                 CREDIT EXECUTION LAYER                       │   │   │
+│  │  │  • InvoiceRegistry.sol — Invoice lifecycle management       │   │   │
+│  │  │  • ExecutionPool.sol — USDC holding for funding             │   │   │
+│  │  │  • PaymentRouter.sol — Funding & repayment logic            │   │   │
 │  │  └─────────────────────────────────────────────────────────────┘   │   │
 │  └────────────────────────────┬────────────────────────────────────────┘   │
 │                               │                                              │
@@ -96,49 +83,46 @@
 │                                                                               │
 │  PHASE 1: LIQUIDITY PROVISIONING                                             │
 │  ────────────────────────────────                                             │
-│  LP (Ethereum) ──USDC──► Bridge Kit ──► Arc LiquidityPool                    │
-│  LP (Polygon)  ──USDC──► Bridge Kit ──► Arc LiquidityPool                    │
-│  LP (Base)     ──USDC──► Bridge Kit ──► Arc LiquidityPool                    │
-│                                         │                                     │
-│                                         ▼                                     │
-│                              Arc aggregates as single pool                    │
-│                              LP receives sfUSDC share tokens                  │
+│  LP deposits USDC directly to Base LiquidityPool                             │
+│         │                                                                     │
+│         ▼                                                                     │
+│  LP receives sfUSDC share tokens (ERC-4626)                                  │
 │                                                                               │
-│  PHASE 2: INVOICE CREATION (on Sui)                                          │
-│  ───────────────────────────────────                                          │
-│  Supplier ──(via Circle Wallet)──► Sui: invoice::create()                    │
+│  PHASE 2: INVOICE CREATION (on Base)                                         │
+│  ────────────────────────────────────                                         │
+│  Supplier ──(via Circle Wallet)──► Base: InvoiceRegistry.create()            │
 │                                    │                                          │
 │                                    ▼                                          │
-│                         Invoice Object Created                                │
+│                         Invoice Created                                       │
 │                         status: PENDING                                       │
 │                                                                               │
-│  PHASE 3: BUYER APPROVAL (on Sui)                                            │
-│  ─────────────────────────────────                                            │
-│  Buyer ──(via Circle Wallet)──► Sui: invoice::approve()                      │
+│  PHASE 3: BUYER APPROVAL (on Base)                                           │
+│  ──────────────────────────────────                                           │
+│  Buyer ──(via Circle Wallet)──► Base: InvoiceRegistry.approve()              │
 │                                 │                                             │
 │                                 ▼                                             │
 │                      Invoice status: APPROVED                                 │
 │                      Emits: InvoiceApproved event                            │
 │                                                                               │
-│  PHASE 4: FUNDING (Arc → Sui)                                                │
-│  ────────────────────────────                                                 │
+│  PHASE 4: FUNDING (on Base)                                                  │
+│  ──────────────────────────                                                   │
 │  Backend detects InvoiceApproved event                                       │
 │         │                                                                     │
 │         ▼                                                                     │
-│  Arc: BridgeRouter.routeToSui(amount, invoiceId)                             │
-│         │                                                                     │
-│         ▼ (CCTP / Wormhole)                                                  │
-│  Sui: execution_pool::receive_funds()                                        │
+│  Base: PaymentRouter.requestFunding(invoiceId)                               │
 │         │                                                                     │
 │         ▼                                                                     │
-│  Sui: payment_router::fund_invoice()                                         │
+│  LiquidityPool transfers USDC to ExecutionPool                               │
+│         │                                                                     │
+│         ▼                                                                     │
+│  ExecutionPool.fundInvoice() → USDC to Supplier                              │
 │         │                                                                     │
 │         ▼                                                                     │
 │  Invoice status: FUNDED                                                       │
 │                                                                               │
 │  PHASE 5: SUPPLIER PAYOUT                                                    │
 │  ────────────────────────                                                     │
-│  Sui: USDC transferred to Supplier's Circle Wallet                           │
+│  Base: USDC transferred to Supplier's Circle Wallet                          │
 │         │                                                                     │
 │         ▼                                                                     │
 │  Circle Gateway: Off-ramp USDC → Supplier's bank                             │
@@ -154,20 +138,18 @@
 │  Buyer's Circle Wallet receives USDC                                         │
 │         │                                                                     │
 │         ▼                                                                     │
-│  Sui: payment_router::repay_invoice()                                        │
+│  Base: PaymentRouter.processRepayment(invoiceId)                             │
 │         │                                                                     │
 │         ▼                                                                     │
 │  Invoice status: PAID                                                         │
 │                                                                               │
-│  PHASE 7: CAPITAL RETURN TO ARC                                              │
-│  ───────────────────────────────                                              │
-│  Sui: execution_pool::return_to_arc(amount + yield)                          │
-│         │                                                                     │
-│         ▼ (CCTP / Wormhole)                                                  │
-│  Arc: LiquidityPool receives USDC + yield                                    │
+│  PHASE 7: YIELD DISTRIBUTION                                                 │
+│  ───────────────────────────                                                  │
+│  Repayment (faceValue) returned to LiquidityPool                             │
 │         │                                                                     │
 │         ▼                                                                     │
-│  LP share value increases (yield distributed)                                 │
+│  Yield = faceValue - fundingAmount                                           │
+│  LP share value increases automatically (ERC-4626)                           │
 │                                                                               │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -176,9 +158,110 @@
 
 ## Technical Specifications
 
-### 1. Arc Smart Contracts (Solidity — EVM on Arc L1)
+### Base Network Configuration
 
-#### LiquidityPool.sol
+| Property | Testnet (Sepolia) | Mainnet |
+|----------|-------------------|---------|
+| **Chain ID** | 84532 | 8453 |
+| **RPC Endpoint** | https://sepolia.base.org | https://mainnet.base.org |
+| **Explorer** | https://sepolia.basescan.org | https://basescan.org |
+| **USDC Address** | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` | `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| **USDC Decimals** | 6 | 6 |
+| **CCTP Domain ID** | 6 | 6 |
+
+**Key Features:**
+- Native USDC (not bridged)
+- ~$0.001 per transaction
+- ~2 second finality
+- 87% of ERC-4337 activity (account abstraction leader)
+- Circle Wallets + Gateway work natively
+
+### Contract Addresses (Base Sepolia)
+
+| Contract | Address |
+|----------|---------|
+| **USDC** | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+| **CCTP TokenMessenger** | `0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5` |
+| **CCTP MessageTransmitter** | `0x7865fAfC2db2093669d92c0F33AeEF291086BEFD` |
+
+### Circle SDK Packages
+
+```bash
+# Core packages for development
+npm install @circle-fin/developer-controlled-wallets  # Wallets SDK
+npm install @circle-fin/smart-contract-platform       # Contracts SDK
+
+# Ethereum/Base development
+npm install ethers@^6.0.0
+npm install @openzeppelin/contracts
+npm install hardhat
+```
+
+---
+
+## Smart Contracts
+
+### Contract Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         BASE L2 CONTRACTS                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                    LiquidityPool.sol (ERC-4626)                         │ │
+│  │  • LP deposits USDC, receives sfUSDC shares                            │ │
+│  │  • Tracks deployed capital vs available liquidity                      │ │
+│  │  • Automatic yield distribution via share price increase               │ │
+│  │  • Optional: USYC treasury integration for idle capital yield          │ │
+│  └────────────────────────────────┬───────────────────────────────────────┘ │
+│                                   │                                          │
+│                                   ▼                                          │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                    InvoiceRegistry.sol                                  │ │
+│  │  • Invoice CRUD operations                                             │ │
+│  │  • Status lifecycle (PENDING → APPROVED → FUNDED → PAID)               │ │
+│  │  • Access control (buyer, supplier modifiers)                          │ │
+│  │  • Events for backend integration                                      │ │
+│  └────────────────────────────────┬───────────────────────────────────────┘ │
+│                                   │                                          │
+│                                   ▼                                          │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                    ExecutionPool.sol                                    │ │
+│  │  • Receives USDC from LiquidityPool for funding                        │ │
+│  │  • Funds approved invoices                                             │ │
+│  │  • Receives repayments from buyers                                     │ │
+│  │  • Returns capital + yield to LiquidityPool                            │ │
+│  └────────────────────────────────┬───────────────────────────────────────┘ │
+│                                   │                                          │
+│                                   ▼                                          │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                    PaymentRouter.sol                                    │ │
+│  │  • Orchestrates funding requests                                       │ │
+│  │  • Processes repayments                                                │ │
+│  │  • Coordinates between all contracts                                   │ │
+│  │  • Protocol fee management                                             │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+│  ┌────────────────────────────────────────────────────────────────────────┐ │
+│  │                    TreasuryManager.sol (Optional - Phase 2)            │ │
+│  │  • Deposits idle USDC to USYC for Treasury yield                       │ │
+│  │  • Redeems USYC instantly when funding needed                          │ │
+│  │  • Dual-yield: Treasury rate on idle + invoice spread on deployed      │ │
+│  └────────────────────────────────────────────────────────────────────────┘ │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Deployment Order
+
+1. Deploy `InvoiceRegistry.sol`
+2. Deploy `LiquidityPool.sol` (pass USDC address)
+3. Deploy `ExecutionPool.sol` (pass USDC, InvoiceRegistry addresses)
+4. Deploy `PaymentRouter.sol` (pass InvoiceRegistry, ExecutionPool, LiquidityPool)
+5. Configure access control roles
+
+### 1. LiquidityPool.sol — ERC-4626 Vault
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -186,23 +269,26 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
  * @title SeedFinance Liquidity Pool
- * @notice ERC-4626 vault for USDC deposits on Arc
+ * @notice ERC-4626 vault for USDC deposits on Base
  * @dev LPs deposit USDC, receive sfUSDC shares, earn yield from invoice financing
  */
 contract LiquidityPool is ERC4626, AccessControl {
+    using SafeERC20 for IERC20;
+
     bytes32 public constant ROUTER_ROLE = keccak256("ROUTER_ROLE");
 
     // Tracking
-    uint256 public totalDeployed;      // USDC currently on Sui
+    uint256 public totalDeployed;      // USDC currently funding invoices
     uint256 public totalYieldEarned;   // Cumulative yield
 
     // Events
-    event LiquidityRouted(uint256 amount, bytes32 invoiceId, uint64 suiDestination);
-    event LiquidityReturned(uint256 principal, uint256 yield, bytes32 invoiceId);
+    event LiquidityDeployed(uint256 amount, uint256 invoiceId);
+    event LiquidityReturned(uint256 principal, uint256 yield, uint256 invoiceId);
     event YieldDistributed(uint256 amount, uint256 timestamp);
 
     constructor(
@@ -214,38 +300,40 @@ contract LiquidityPool is ERC4626, AccessControl {
     }
 
     /**
-     * @notice Route USDC to Sui for invoice funding
-     * @param amount Amount of USDC to route
-     * @param invoiceId Sui invoice object ID
+     * @notice Deploy USDC for invoice funding
+     * @param amount Amount of USDC to deploy
+     * @param invoiceId Invoice ID being funded
      */
-    function routeToSui(
+    function deployForFunding(
         uint256 amount,
-        bytes32 invoiceId
+        uint256 invoiceId
     ) external onlyRole(ROUTER_ROLE) returns (bool) {
-        require(totalAssets() - totalDeployed >= amount, "Insufficient available liquidity");
+        require(availableLiquidity() >= amount, "Insufficient available liquidity");
 
         totalDeployed += amount;
 
-        // Trigger CCTP/Bridge transfer to Sui
-        // Integration point: Circle CCTP or Wormhole
+        // Transfer USDC to caller (ExecutionPool)
+        IERC20(asset()).safeTransfer(msg.sender, amount);
 
-        emit LiquidityRouted(amount, invoiceId, 0); // 0 = Sui chain ID placeholder
+        emit LiquidityDeployed(amount, invoiceId);
         return true;
     }
 
     /**
-     * @notice Receive returned capital from Sui
-     * @param principal Original amount
-     * @param yield Earned yield
+     * @notice Receive returned capital from invoice repayment
+     * @param principal Original amount deployed
+     * @param yield Earned yield (faceValue - fundingAmount)
      * @param invoiceId Associated invoice
      */
-    function receiveFromSui(
+    function receiveRepayment(
         uint256 principal,
         uint256 yield,
-        bytes32 invoiceId
+        uint256 invoiceId
     ) external onlyRole(ROUTER_ROLE) {
         totalDeployed -= principal;
         totalYieldEarned += yield;
+
+        // USDC already transferred to this contract by caller
 
         emit LiquidityReturned(principal, yield, invoiceId);
     }
@@ -258,527 +346,480 @@ contract LiquidityPool is ERC4626, AccessControl {
     }
 
     /**
-     * @notice Current utilization rate (bps)
+     * @notice Current utilization rate (basis points)
      */
     function utilizationRate() public view returns (uint256) {
         if (totalAssets() == 0) return 0;
         return (totalDeployed * 10000) / totalAssets();
     }
+
+    /**
+     * @notice Total assets (override to account for deployed capital)
+     * @dev Deployed capital is still part of total assets (it will return with yield)
+     */
+    function totalAssets() public view override returns (uint256) {
+        return IERC20(asset()).balanceOf(address(this)) + totalDeployed;
+    }
 }
 ```
 
-#### BridgeRouter.sol
+### 2. InvoiceRegistry.sol — Invoice Lifecycle
 
 ```solidity
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "./LiquidityPool.sol";
-import "@circle/cctp/interfaces/ITokenMessenger.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
- * @title Bridge Router
- * @notice Routes USDC between Arc and Sui via Circle CCTP
+ * @title Invoice Registry
+ * @notice Manages invoice lifecycle on Base
  */
-contract BridgeRouter {
-    LiquidityPool public immutable pool;
-    ITokenMessenger public immutable cctpMessenger;
-    IERC20 public immutable usdc;
+contract InvoiceRegistry is AccessControl, ReentrancyGuard {
+    bytes32 public constant EXECUTOR_ROLE = keccak256("EXECUTOR_ROLE");
 
-    // Sui domain for CCTP (placeholder - actual value TBD)
-    uint32 public constant SUI_DOMAIN = 8;
+    // Invoice status enum
+    enum InvoiceStatus { Pending, Approved, Funded, Paid, Cancelled }
 
-    // Pending transfers
-    mapping(bytes32 => PendingTransfer) public pendingTransfers;
-
-    struct PendingTransfer {
-        bytes32 invoiceId;
-        uint256 amount;
-        uint64 timestamp;
-        TransferStatus status;
+    // Invoice struct
+    struct Invoice {
+        uint256 id;
+        address buyer;
+        address supplier;
+        uint256 faceValue;          // Amount in USDC (6 decimals on Base)
+        uint256 discountRateBps;    // Early payment discount (basis points)
+        uint256 maturityDate;       // Unix timestamp
+        bytes32 invoiceHash;        // IPFS CID of invoice document
+        bytes32 externalId;         // External reference number
+        InvoiceStatus status;
+        uint256 createdAt;
+        uint256 fundedAt;
+        uint256 paidAt;
     }
 
-    enum TransferStatus { Pending, Completed, Failed }
+    // Storage
+    uint256 public nextInvoiceId = 1;
+    mapping(uint256 => Invoice) public invoices;
+    mapping(address => uint256[]) public supplierInvoices;
+    mapping(address => uint256[]) public buyerInvoices;
 
-    event TransferInitiated(bytes32 indexed invoiceId, uint256 amount, bytes32 messageHash);
-    event TransferCompleted(bytes32 indexed invoiceId, uint256 amount);
+    // Events
+    event InvoiceCreated(
+        uint256 indexed invoiceId,
+        address indexed buyer,
+        address indexed supplier,
+        uint256 faceValue,
+        uint256 maturityDate
+    );
+    event InvoiceApproved(uint256 indexed invoiceId, address indexed buyer, uint256 approvedAt);
+    event InvoiceFunded(uint256 indexed invoiceId, uint256 amountFunded, uint256 discountApplied, uint256 fundedAt);
+    event InvoicePaid(uint256 indexed invoiceId, uint256 amountPaid, uint256 paidAt);
+    event InvoiceCancelled(uint256 indexed invoiceId, address cancelledBy, uint256 cancelledAt);
 
-    constructor(
-        address _pool,
-        address _cctpMessenger,
-        address _usdc
-    ) {
-        pool = LiquidityPool(_pool);
-        cctpMessenger = ITokenMessenger(_cctpMessenger);
-        usdc = IERC20(_usdc);
-    }
-
-    /**
-     * @notice Route USDC to Sui for invoice funding
-     * @param invoiceId Sui invoice object ID
-     * @param amount USDC amount
-     * @param suiRecipient Recipient address on Sui (32 bytes)
-     */
-    function routeToSui(
-        bytes32 invoiceId,
-        uint256 amount,
-        bytes32 suiRecipient
-    ) external returns (bytes32 messageHash) {
-        // Pull from pool
-        require(pool.routeToSui(amount, invoiceId), "Pool route failed");
-
-        // Approve CCTP
-        usdc.approve(address(cctpMessenger), amount);
-
-        // Send via CCTP
-        uint64 nonce = cctpMessenger.depositForBurn(
-            amount,
-            SUI_DOMAIN,
-            suiRecipient,
-            address(usdc)
-        );
-
-        messageHash = keccak256(abi.encodePacked(nonce, invoiceId));
-
-        pendingTransfers[messageHash] = PendingTransfer({
-            invoiceId: invoiceId,
-            amount: amount,
-            timestamp: uint64(block.timestamp),
-            status: TransferStatus.Pending
-        });
-
-        emit TransferInitiated(invoiceId, amount, messageHash);
+    constructor() {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**
-     * @notice Receive confirmation of Sui arrival
-     * @dev Called by relayer/oracle after Sui confirms receipt
+     * @notice Create a new invoice (called by supplier)
      */
-    function confirmArrival(bytes32 messageHash) external {
-        PendingTransfer storage transfer = pendingTransfers[messageHash];
-        require(transfer.status == TransferStatus.Pending, "Invalid transfer");
+    function createInvoice(
+        address buyer,
+        uint256 faceValue,
+        uint256 discountRateBps,
+        uint256 maturityDate,
+        bytes32 invoiceHash,
+        bytes32 externalId
+    ) external nonReentrant returns (uint256 invoiceId) {
+        require(buyer != address(0), "Invalid buyer");
+        require(buyer != msg.sender, "Buyer cannot be supplier");
+        require(faceValue > 0, "Face value must be > 0");
+        require(maturityDate > block.timestamp, "Maturity must be in future");
+        require(discountRateBps <= 10000, "Discount rate too high");
 
-        transfer.status = TransferStatus.Completed;
-        emit TransferCompleted(transfer.invoiceId, transfer.amount);
-    }
-}
-```
+        invoiceId = nextInvoiceId++;
 
-### 2. Sui Move Contracts
-
-#### invoice.move
-
-```move
-module seed_finance::invoice {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
-    use sui::event;
-    use sui::clock::{Self, Clock};
-
-    // === Errors ===
-    const ENotBuyer: u64 = 1;
-    const ENotSupplier: u64 = 2;
-    const EInvalidStatus: u64 = 3;
-    const ENotMature: u64 = 4;
-    const EAlreadyFunded: u64 = 5;
-
-    // === Structs ===
-
-    /// Invoice object representing a payable
-    struct Invoice has key, store {
-        id: UID,
-        // Parties
-        buyer: address,
-        supplier: address,
-        // Financial terms
-        face_value: u64,          // Amount in USDC (6 decimals)
-        discount_rate_bps: u64,   // Early payment discount (basis points)
-        maturity_date: u64,       // Unix timestamp
-        // Metadata
-        invoice_hash: vector<u8>, // IPFS CID of invoice document
-        external_id: vector<u8>,  // External reference number
-        // State
-        status: u8,
-        created_at: u64,
-        funded_at: u64,
-        paid_at: u64,
-    }
-
-    /// Invoice status constants
-    const STATUS_PENDING: u8 = 0;
-    const STATUS_APPROVED: u8 = 1;
-    const STATUS_FUNDED: u8 = 2;
-    const STATUS_PAID: u8 = 3;
-    const STATUS_CANCELLED: u8 = 4;
-
-    // === Events ===
-
-    struct InvoiceCreated has copy, drop {
-        invoice_id: address,
-        buyer: address,
-        supplier: address,
-        face_value: u64,
-        maturity_date: u64,
-    }
-
-    struct InvoiceApproved has copy, drop {
-        invoice_id: address,
-        buyer: address,
-        approved_at: u64,
-    }
-
-    struct InvoiceFunded has copy, drop {
-        invoice_id: address,
-        amount_funded: u64,
-        discount_applied: u64,
-        funded_at: u64,
-    }
-
-    struct InvoicePaid has copy, drop {
-        invoice_id: address,
-        amount_paid: u64,
-        paid_at: u64,
-    }
-
-    // === Public Functions ===
-
-    /// Create a new invoice (called by supplier)
-    public entry fun create(
-        buyer: address,
-        face_value: u64,
-        discount_rate_bps: u64,
-        maturity_date: u64,
-        invoice_hash: vector<u8>,
-        external_id: vector<u8>,
-        clock: &Clock,
-        ctx: &mut TxContext
-    ) {
-        let supplier = tx_context::sender(ctx);
-        let now = clock::timestamp_ms(clock) / 1000;
-
-        let invoice = Invoice {
-            id: object::new(ctx),
-            buyer,
-            supplier,
-            face_value,
-            discount_rate_bps,
-            maturity_date,
-            invoice_hash,
-            external_id,
-            status: STATUS_PENDING,
-            created_at: now,
-            funded_at: 0,
-            paid_at: 0,
-        };
-
-        let invoice_id = object::uid_to_address(&invoice.id);
-
-        event::emit(InvoiceCreated {
-            invoice_id,
-            buyer,
-            supplier,
-            face_value,
-            maturity_date,
+        invoices[invoiceId] = Invoice({
+            id: invoiceId,
+            buyer: buyer,
+            supplier: msg.sender,
+            faceValue: faceValue,
+            discountRateBps: discountRateBps,
+            maturityDate: maturityDate,
+            invoiceHash: invoiceHash,
+            externalId: externalId,
+            status: InvoiceStatus.Pending,
+            createdAt: block.timestamp,
+            fundedAt: 0,
+            paidAt: 0
         });
 
-        // Transfer to shared object for accessibility
-        transfer::share_object(invoice);
+        supplierInvoices[msg.sender].push(invoiceId);
+        buyerInvoices[buyer].push(invoiceId);
+
+        emit InvoiceCreated(invoiceId, buyer, msg.sender, faceValue, maturityDate);
     }
 
-    /// Approve invoice (called by buyer)
-    public entry fun approve(
-        invoice: &mut Invoice,
-        clock: &Clock,
-        ctx: &mut TxContext
-    ) {
-        let sender = tx_context::sender(ctx);
-        assert!(sender == invoice.buyer, ENotBuyer);
-        assert!(invoice.status == STATUS_PENDING, EInvalidStatus);
+    /**
+     * @notice Approve invoice (called by buyer)
+     */
+    function approveInvoice(uint256 invoiceId) external nonReentrant {
+        Invoice storage invoice = invoices[invoiceId];
+        require(invoice.id != 0, "Invoice does not exist");
+        require(msg.sender == invoice.buyer, "Only buyer can approve");
+        require(invoice.status == InvoiceStatus.Pending, "Invalid status");
 
-        invoice.status = STATUS_APPROVED;
+        invoice.status = InvoiceStatus.Approved;
 
-        event::emit(InvoiceApproved {
-            invoice_id: object::uid_to_address(&invoice.id),
-            buyer: invoice.buyer,
-            approved_at: clock::timestamp_ms(clock) / 1000,
-        });
+        emit InvoiceApproved(invoiceId, msg.sender, block.timestamp);
     }
 
-    /// Mark invoice as funded (called by execution pool)
-    public fun mark_funded(
-        invoice: &mut Invoice,
-        amount_funded: u64,
-        clock: &Clock,
-    ) {
-        assert!(invoice.status == STATUS_APPROVED, EInvalidStatus);
+    /**
+     * @notice Mark invoice as funded (called by ExecutionPool)
+     */
+    function markFunded(
+        uint256 invoiceId,
+        uint256 amountFunded
+    ) external onlyRole(EXECUTOR_ROLE) {
+        Invoice storage invoice = invoices[invoiceId];
+        require(invoice.status == InvoiceStatus.Approved, "Invoice not approved");
 
-        let now = clock::timestamp_ms(clock) / 1000;
-        invoice.status = STATUS_FUNDED;
-        invoice.funded_at = now;
+        invoice.status = InvoiceStatus.Funded;
+        invoice.fundedAt = block.timestamp;
 
-        let discount = calculate_discount(
-            invoice.face_value,
-            invoice.discount_rate_bps,
-            invoice.maturity_date - now
+        uint256 discount = calculateDiscount(
+            invoice.faceValue,
+            invoice.discountRateBps,
+            invoice.maturityDate - block.timestamp
         );
 
-        event::emit(InvoiceFunded {
-            invoice_id: object::uid_to_address(&invoice.id),
-            amount_funded,
-            discount_applied: discount,
-            funded_at: now,
-        });
+        emit InvoiceFunded(invoiceId, amountFunded, discount, block.timestamp);
     }
 
-    /// Mark invoice as paid (called after buyer repayment)
-    public fun mark_paid(
-        invoice: &mut Invoice,
-        amount_paid: u64,
-        clock: &Clock,
-    ) {
-        assert!(invoice.status == STATUS_FUNDED, EInvalidStatus);
+    /**
+     * @notice Mark invoice as paid (called by PaymentRouter)
+     */
+    function markPaid(uint256 invoiceId, uint256 amountPaid) external onlyRole(EXECUTOR_ROLE) {
+        Invoice storage invoice = invoices[invoiceId];
+        require(invoice.status == InvoiceStatus.Funded, "Invoice not funded");
 
-        let now = clock::timestamp_ms(clock) / 1000;
-        invoice.status = STATUS_PAID;
-        invoice.paid_at = now;
+        invoice.status = InvoiceStatus.Paid;
+        invoice.paidAt = block.timestamp;
 
-        event::emit(InvoicePaid {
-            invoice_id: object::uid_to_address(&invoice.id),
-            amount_paid,
-            paid_at: now,
-        });
+        emit InvoicePaid(invoiceId, amountPaid, block.timestamp);
+    }
+
+    /**
+     * @notice Cancel invoice (only if pending)
+     */
+    function cancelInvoice(uint256 invoiceId) external nonReentrant {
+        Invoice storage invoice = invoices[invoiceId];
+        require(invoice.id != 0, "Invoice does not exist");
+        require(
+            msg.sender == invoice.buyer || msg.sender == invoice.supplier,
+            "Not authorized"
+        );
+        require(invoice.status == InvoiceStatus.Pending, "Can only cancel pending invoices");
+
+        invoice.status = InvoiceStatus.Cancelled;
+
+        emit InvoiceCancelled(invoiceId, msg.sender, block.timestamp);
     }
 
     // === View Functions ===
 
-    public fun get_funding_amount(invoice: &Invoice, clock: &Clock): u64 {
-        let now = clock::timestamp_ms(clock) / 1000;
-        let days_to_maturity = (invoice.maturity_date - now) / 86400;
-        let discount = calculate_discount(
-            invoice.face_value,
-            invoice.discount_rate_bps,
-            days_to_maturity * 86400
+    /**
+     * @notice Calculate funding amount (face value minus discount)
+     */
+    function getFundingAmount(uint256 invoiceId) public view returns (uint256) {
+        Invoice storage invoice = invoices[invoiceId];
+        uint256 secondsToMaturity = invoice.maturityDate > block.timestamp
+            ? invoice.maturityDate - block.timestamp
+            : 0;
+        uint256 discount = calculateDiscount(
+            invoice.faceValue,
+            invoice.discountRateBps,
+            secondsToMaturity
         );
-        invoice.face_value - discount
+        return invoice.faceValue - discount;
     }
 
-    public fun status(invoice: &Invoice): u8 { invoice.status }
-    public fun buyer(invoice: &Invoice): address { invoice.buyer }
-    public fun supplier(invoice: &Invoice): address { invoice.supplier }
-    public fun face_value(invoice: &Invoice): u64 { invoice.face_value }
+    /**
+     * @notice Get invoice details
+     */
+    function getInvoice(uint256 invoiceId) external view returns (Invoice memory) {
+        return invoices[invoiceId];
+    }
+
+    /**
+     * @notice Get supplier's invoices
+     */
+    function getSupplierInvoices(address supplier) external view returns (uint256[] memory) {
+        return supplierInvoices[supplier];
+    }
+
+    /**
+     * @notice Get buyer's invoices
+     */
+    function getBuyerInvoices(address buyer) external view returns (uint256[] memory) {
+        return buyerInvoices[buyer];
+    }
 
     // === Internal Functions ===
 
-    fun calculate_discount(face_value: u64, rate_bps: u64, seconds: u64): u64 {
+    function calculateDiscount(
+        uint256 faceValue,
+        uint256 rateBps,
+        uint256 seconds_
+    ) internal pure returns (uint256) {
         // Simple interest: discount = face_value * rate * time / (365 days)
-        let annual_discount = (face_value * rate_bps) / 10000;
-        (annual_discount * seconds) / 31536000 // seconds in a year
+        uint256 annualDiscount = (faceValue * rateBps) / 10000;
+        return (annualDiscount * seconds_) / 365 days;
     }
 }
 ```
 
-#### execution_pool.move
+### 3. ExecutionPool.sol — USDC Holding
 
-```move
-module seed_finance::execution_pool {
-    use sui::object::{Self, UID};
-    use sui::tx_context::{Self, TxContext};
-    use sui::transfer;
-    use sui::coin::{Self, Coin};
-    use sui::balance::{Self, Balance};
-    use sui::event;
-    use sui::clock::Clock;
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
 
-    use seed_finance::invoice::{Self, Invoice};
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./InvoiceRegistry.sol";
+import "./LiquidityPool.sol";
 
-    // USDC type (placeholder - use actual USDC type on Sui)
-    struct USDC has drop {}
+/**
+ * @title Execution Pool
+ * @notice USDC holding for invoice funding on Base
+ * @dev Receives USDC from LiquidityPool, funds invoices, processes repayments
+ */
+contract ExecutionPool is AccessControl, ReentrancyGuard {
+    using SafeERC20 for IERC20;
 
-    // === Errors ===
-    const EInsufficientBalance: u64 = 1;
-    const EUnauthorized: u64 = 2;
+    bytes32 public constant ROUTER_ROLE = keccak256("ROUTER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    // === Structs ===
+    IERC20 public immutable usdc;
+    InvoiceRegistry public immutable invoiceRegistry;
+    LiquidityPool public immutable liquidityPool;
 
-    /// Execution pool - temporary USDC holding on Sui
-    struct ExecutionPool has key {
-        id: UID,
-        balance: Balance<USDC>,
-        admin: address,
-        // Tracking
-        total_funded: u64,
-        total_repaid: u64,
-        active_invoices: u64,
-    }
+    // Tracking
+    uint256 public totalFunded;
+    uint256 public totalRepaid;
+    uint256 public activeInvoices;
 
-    /// Admin capability
-    struct AdminCap has key, store {
-        id: UID,
-    }
+    // Events
+    event InvoiceFunded(uint256 indexed invoiceId, address indexed supplier, uint256 amount);
+    event RepaymentReceived(uint256 indexed invoiceId, address indexed buyer, uint256 amount);
+    event YieldReturned(uint256 indexed invoiceId, uint256 principal, uint256 yield);
 
-    // === Events ===
-
-    struct FundsReceived has copy, drop {
-        amount: u64,
-        from_chain: u8,  // 0 = Arc
-        timestamp: u64,
-    }
-
-    struct InvoiceFundedEvent has copy, drop {
-        invoice_id: address,
-        supplier: address,
-        amount: u64,
-    }
-
-    struct FundsReturnedToArc has copy, drop {
-        amount: u64,
-        yield_amount: u64,
-        timestamp: u64,
-    }
-
-    // === Init ===
-
-    fun init(ctx: &mut TxContext) {
-        let admin = tx_context::sender(ctx);
-
-        let pool = ExecutionPool {
-            id: object::new(ctx),
-            balance: balance::zero(),
-            admin,
-            total_funded: 0,
-            total_repaid: 0,
-            active_invoices: 0,
-        };
-
-        let admin_cap = AdminCap {
-            id: object::new(ctx),
-        };
-
-        transfer::share_object(pool);
-        transfer::transfer(admin_cap, admin);
-    }
-
-    // === Public Functions ===
-
-    /// Receive USDC from Arc (called after bridge arrival)
-    public entry fun receive_from_arc(
-        pool: &mut ExecutionPool,
-        funds: Coin<USDC>,
-        clock: &Clock,
-        _ctx: &mut TxContext
+    constructor(
+        address _usdc,
+        address _invoiceRegistry,
+        address _liquidityPool
     ) {
-        let amount = coin::value(&funds);
-
-        balance::join(&mut pool.balance, coin::into_balance(funds));
-
-        event::emit(FundsReceived {
-            amount,
-            from_chain: 0, // Arc
-            timestamp: sui::clock::timestamp_ms(clock) / 1000,
-        });
+        usdc = IERC20(_usdc);
+        invoiceRegistry = InvoiceRegistry(_invoiceRegistry);
+        liquidityPool = LiquidityPool(_liquidityPool);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
     }
 
-    /// Fund an approved invoice
-    public entry fun fund_invoice(
-        pool: &mut ExecutionPool,
-        invoice: &mut Invoice,
-        clock: &Clock,
-        ctx: &mut TxContext
-    ) {
-        // Calculate funding amount (face value minus discount)
-        let funding_amount = invoice::get_funding_amount(invoice, clock);
+    /**
+     * @notice Fund an approved invoice
+     * @param invoiceId The invoice to fund
+     */
+    function fundInvoice(uint256 invoiceId) external onlyRole(ROUTER_ROLE) nonReentrant {
+        InvoiceRegistry.Invoice memory invoice = invoiceRegistry.getInvoice(invoiceId);
+        require(invoice.status == InvoiceRegistry.InvoiceStatus.Approved, "Invoice not approved");
 
-        assert!(balance::value(&pool.balance) >= funding_amount, EInsufficientBalance);
+        uint256 fundingAmount = invoiceRegistry.getFundingAmount(invoiceId);
 
-        // Extract USDC
-        let payment = coin::from_balance(
-            balance::split(&mut pool.balance, funding_amount),
-            ctx
-        );
+        // Get USDC from liquidity pool
+        require(liquidityPool.deployForFunding(fundingAmount, invoiceId), "Pool deploy failed");
 
         // Update invoice status
-        invoice::mark_funded(invoice, funding_amount, clock);
+        invoiceRegistry.markFunded(invoiceId, fundingAmount);
 
         // Transfer to supplier
-        let supplier = invoice::supplier(invoice);
-        transfer::public_transfer(payment, supplier);
+        usdc.safeTransfer(invoice.supplier, fundingAmount);
 
         // Update tracking
-        pool.total_funded = pool.total_funded + funding_amount;
-        pool.active_invoices = pool.active_invoices + 1;
+        totalFunded += fundingAmount;
+        activeInvoices++;
 
-        event::emit(InvoiceFundedEvent {
-            invoice_id: object::uid_to_address(object::borrow_id(invoice)),
-            supplier,
-            amount: funding_amount,
-        });
+        emit InvoiceFunded(invoiceId, invoice.supplier, fundingAmount);
     }
 
-    /// Receive repayment from buyer
-    public entry fun receive_repayment(
-        pool: &mut ExecutionPool,
-        invoice: &mut Invoice,
-        payment: Coin<USDC>,
-        clock: &Clock,
-        _ctx: &mut TxContext
-    ) {
-        let amount = coin::value(&payment);
+    /**
+     * @notice Receive repayment from buyer
+     * @param invoiceId The invoice being repaid
+     */
+    function receiveRepayment(uint256 invoiceId) external nonReentrant {
+        InvoiceRegistry.Invoice memory invoice = invoiceRegistry.getInvoice(invoiceId);
+        require(invoice.status == InvoiceRegistry.InvoiceStatus.Funded, "Invoice not funded");
+        require(msg.sender == invoice.buyer, "Only buyer can repay");
 
-        balance::join(&mut pool.balance, coin::into_balance(payment));
+        uint256 repaymentAmount = invoice.faceValue;
 
-        invoice::mark_paid(invoice, amount, clock);
+        // Transfer USDC from buyer
+        usdc.safeTransferFrom(msg.sender, address(this), repaymentAmount);
 
-        pool.total_repaid = pool.total_repaid + amount;
-        pool.active_invoices = pool.active_invoices - 1;
-    }
+        // Update invoice status
+        invoiceRegistry.markPaid(invoiceId, repaymentAmount);
 
-    /// Return funds to Arc (yield included)
-    public entry fun return_to_arc(
-        pool: &mut ExecutionPool,
-        _admin: &AdminCap,
-        amount: u64,
-        yield_amount: u64,
-        clock: &Clock,
-        ctx: &mut TxContext
-    ) {
-        let total = amount + yield_amount;
-        assert!(balance::value(&pool.balance) >= total, EInsufficientBalance);
+        // Calculate yield (difference between face value and funding amount)
+        uint256 fundingAmount = invoiceRegistry.getFundingAmount(invoiceId);
+        uint256 yield = repaymentAmount - fundingAmount;
 
-        let funds = coin::from_balance(
-            balance::split(&mut pool.balance, total),
-            ctx
-        );
+        // Return to liquidity pool
+        usdc.safeTransfer(address(liquidityPool), repaymentAmount);
+        liquidityPool.receiveRepayment(fundingAmount, yield, invoiceId);
 
-        // Send to bridge for Arc return
-        // Integration: Wormhole / CCTP return path
-        // For MVP: transfer to bridge address
+        // Update tracking
+        totalRepaid += repaymentAmount;
+        activeInvoices--;
 
-        event::emit(FundsReturnedToArc {
-            amount,
-            yield_amount,
-            timestamp: sui::clock::timestamp_ms(clock) / 1000,
-        });
-
-        // Placeholder: actual bridge integration
-        transfer::public_transfer(funds, @bridge_address);
+        emit RepaymentReceived(invoiceId, msg.sender, repaymentAmount);
+        emit YieldReturned(invoiceId, fundingAmount, yield);
     }
 
     // === View Functions ===
 
-    public fun available_balance(pool: &ExecutionPool): u64 {
-        balance::value(&pool.balance)
+    function availableBalance() external view returns (uint256) {
+        return usdc.balanceOf(address(this));
     }
 
-    public fun total_funded(pool: &ExecutionPool): u64 {
-        pool.total_funded
+    function getTotalFunded() external view returns (uint256) {
+        return totalFunded;
+    }
+
+    function getTotalRepaid() external view returns (uint256) {
+        return totalRepaid;
+    }
+
+    function getActiveInvoices() external view returns (uint256) {
+        return activeInvoices;
     }
 }
 ```
 
-### 3. Backend Services
+### 4. PaymentRouter.sol — Orchestration
 
-#### API Structure
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./InvoiceRegistry.sol";
+import "./ExecutionPool.sol";
+
+/**
+ * @title Payment Router
+ * @notice Orchestrates funding and repayment flows
+ * @dev Coordinates between InvoiceRegistry and ExecutionPool
+ */
+contract PaymentRouter is AccessControl, ReentrancyGuard {
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+
+    InvoiceRegistry public immutable invoiceRegistry;
+    ExecutionPool public immutable executionPool;
+
+    // Fee configuration (basis points)
+    uint256 public protocolFeeBps = 200; // 2%
+    address public feeRecipient;
+
+    // Events
+    event FundingRequested(uint256 indexed invoiceId, uint256 amount);
+    event RepaymentProcessed(uint256 indexed invoiceId, uint256 amount);
+    event ProtocolFeeUpdated(uint256 newFeeBps);
+    event FeeRecipientUpdated(address newRecipient);
+
+    constructor(
+        address _invoiceRegistry,
+        address _executionPool,
+        address _feeRecipient
+    ) {
+        invoiceRegistry = InvoiceRegistry(_invoiceRegistry);
+        executionPool = ExecutionPool(_executionPool);
+        feeRecipient = _feeRecipient;
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(OPERATOR_ROLE, msg.sender);
+    }
+
+    /**
+     * @notice Request funding for an approved invoice
+     * @dev Called by backend after detecting InvoiceApproved event
+     */
+    function requestFunding(uint256 invoiceId) external onlyRole(OPERATOR_ROLE) nonReentrant {
+        InvoiceRegistry.Invoice memory invoice = invoiceRegistry.getInvoice(invoiceId);
+        require(invoice.status == InvoiceRegistry.InvoiceStatus.Approved, "Invoice not approved");
+
+        uint256 fundingAmount = invoiceRegistry.getFundingAmount(invoiceId);
+
+        // Trigger funding from execution pool
+        executionPool.fundInvoice(invoiceId);
+
+        emit FundingRequested(invoiceId, fundingAmount);
+    }
+
+    /**
+     * @notice Process repayment for a funded invoice
+     * @dev Buyer calls this to repay at maturity
+     */
+    function processRepayment(uint256 invoiceId) external nonReentrant {
+        InvoiceRegistry.Invoice memory invoice = invoiceRegistry.getInvoice(invoiceId);
+        require(invoice.status == InvoiceRegistry.InvoiceStatus.Funded, "Invoice not funded");
+        require(msg.sender == invoice.buyer, "Only buyer can repay");
+
+        uint256 repaymentAmount = invoice.faceValue;
+
+        // Process through execution pool
+        executionPool.receiveRepayment(invoiceId);
+
+        emit RepaymentProcessed(invoiceId, repaymentAmount);
+    }
+
+    /**
+     * @notice Batch fund multiple invoices
+     */
+    function batchFund(uint256[] calldata invoiceIds) external onlyRole(OPERATOR_ROLE) nonReentrant {
+        for (uint256 i = 0; i < invoiceIds.length; i++) {
+            InvoiceRegistry.Invoice memory invoice = invoiceRegistry.getInvoice(invoiceIds[i]);
+            if (invoice.status == InvoiceRegistry.InvoiceStatus.Approved) {
+                executionPool.fundInvoice(invoiceIds[i]);
+                emit FundingRequested(invoiceIds[i], invoiceRegistry.getFundingAmount(invoiceIds[i]));
+            }
+        }
+    }
+
+    // === Admin Functions ===
+
+    function setProtocolFee(uint256 newFeeBps) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(newFeeBps <= 1000, "Fee too high"); // Max 10%
+        protocolFeeBps = newFeeBps;
+        emit ProtocolFeeUpdated(newFeeBps);
+    }
+
+    function setFeeRecipient(address newRecipient) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(newRecipient != address(0), "Invalid recipient");
+        feeRecipient = newRecipient;
+        emit FeeRecipientUpdated(newRecipient);
+    }
+}
+```
+
+---
+
+## Backend Services
+
+### API Structure
 
 ```
 /api
@@ -790,8 +831,8 @@ module seed_finance::execution_pool {
 │   └── POST   /:id/fund        — Trigger funding (internal)
 │
 ├── /liquidity
-│   ├── GET    /pool            — Get Arc pool stats
-│   ├── POST   /deposit         — LP deposit (triggers Circle Wallet)
+│   ├── GET    /pool            — Get pool stats
+│   ├── POST   /deposit         — LP deposit
 │   ├── POST   /withdraw        — LP withdrawal
 │   └── GET    /yield           — Get yield metrics
 │
@@ -807,47 +848,52 @@ module seed_finance::execution_pool {
 │
 └── /webhooks
     ├── POST   /circle          — Circle Gateway webhooks
-    ├── POST   /sui             — Sui event webhooks
-    └── POST   /arc             — Arc event webhooks
+    └── POST   /base            — Base event webhooks
 ```
 
-#### Circle Integration Service
+### Circle Integration Service
 
 ```typescript
 // services/circle.ts
 
-import { CircleClient } from '@circle-fin/circle-sdk';
+import { initiateDeveloperControlledWalletsClient } from '@circle-fin/developer-controlled-wallets';
 
 interface CircleConfig {
   apiKey: string;
-  environment: 'sandbox' | 'production';
+  entitySecret: string;
 }
 
 export class CircleService {
-  private client: CircleClient;
+  private client: ReturnType<typeof initiateDeveloperControlledWalletsClient>;
 
   constructor(config: CircleConfig) {
-    this.client = new CircleClient({
+    this.client = initiateDeveloperControlledWalletsClient({
       apiKey: config.apiKey,
-      environment: config.environment,
+      entitySecret: config.entitySecret,
     });
   }
 
   // === Circle Wallets ===
 
   async createWallet(userId: string, type: 'buyer' | 'supplier' | 'lp'): Promise<string> {
-    const wallet = await this.client.wallets.create({
-      idempotencyKey: `${userId}-${type}-${Date.now()}`,
-      description: `Seed Finance ${type} wallet`,
-      refId: userId,
+    const walletSet = await this.client.createWalletSet({
+      name: `${type}-${userId}`,
     });
-    return wallet.data.walletId;
+
+    const wallets = await this.client.createWallets({
+      blockchains: ['BASE-SEPOLIA'],
+      count: 1,
+      walletSetId: walletSet.data?.walletSet?.id,
+      accountType: 'SCA', // Smart Contract Account
+    });
+
+    return wallets.data?.wallets?.[0]?.id || '';
   }
 
   async getWalletBalance(walletId: string): Promise<number> {
-    const balances = await this.client.wallets.getBalance(walletId);
-    const usdc = balances.data.balances.find(b => b.currency === 'USD');
-    return usdc ? parseFloat(usdc.amount) : 0;
+    const response = await this.client.getWalletTokenBalance({ id: walletId });
+    const usdc = response.data?.tokenBalances?.find(b => b.token?.symbol === 'USDC');
+    return usdc ? parseFloat(usdc.amount || '0') : 0;
   }
 
   // === Circle Gateway (On/Off Ramp) ===
@@ -857,22 +903,9 @@ export class CircleService {
     buyerWalletId: string;
     bankAccountId: string;
   }): Promise<string> {
-    const payment = await this.client.payments.create({
-      idempotencyKey: `onramp-${Date.now()}`,
-      amount: {
-        amount: params.amount.toString(),
-        currency: 'USD',
-      },
-      source: {
-        type: 'wire',
-        id: params.bankAccountId,
-      },
-      destination: {
-        type: 'wallet',
-        id: params.buyerWalletId,
-      },
-    });
-    return payment.data.id;
+    // Implementation for fiat → USDC
+    // Uses Circle Gateway API
+    return 'payment-id';
   }
 
   async createOffRamp(params: {
@@ -880,52 +913,16 @@ export class CircleService {
     supplierWalletId: string;
     bankAccountId: string;
   }): Promise<string> {
-    const payout = await this.client.payouts.create({
-      idempotencyKey: `offramp-${Date.now()}`,
-      amount: {
-        amount: params.amount.toString(),
-        currency: 'USD',
-      },
-      source: {
-        type: 'wallet',
-        id: params.supplierWalletId,
-      },
-      destination: {
-        type: 'wire',
-        id: params.bankAccountId,
-      },
-    });
-    return payout.data.id;
-  }
-
-  // === Arc Bridge Integration ===
-
-  async routeToSui(params: {
-    amount: number;
-    invoiceId: string;
-    suiPoolAddress: string;
-  }): Promise<string> {
-    // Use Circle CCTP for cross-chain transfer
-    // Arc → Sui via CCTP
-    const transfer = await this.client.crossChainTransfers.create({
-      idempotencyKey: `route-${params.invoiceId}`,
-      amount: {
-        amount: params.amount.toString(),
-        currency: 'USD',
-      },
-      sourceChain: 'ARC',
-      destinationChain: 'SUI',
-      destinationAddress: params.suiPoolAddress,
-      metadata: {
-        invoiceId: params.invoiceId,
-      },
-    });
-    return transfer.data.id;
+    // Implementation for USDC → fiat
+    // Uses Circle Gateway API
+    return 'payout-id';
   }
 }
 ```
 
-### 4. Frontend Structure
+---
+
+## Frontend Structure
 
 ```
 /app (Next.js 14 App Router)
@@ -955,469 +952,71 @@ export class CircleService {
 
 ---
 
-## USYC Treasury Yield Strategy
-
-### Dual-Yield Architecture
-
-Seed Finance implements a dual-yield strategy using USYC (Hashnote's tokenized US Treasury product) to maximize LP returns on idle capital.
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         DUAL-YIELD STRATEGY                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  LAYER 1: BASE YIELD (Treasury Rate)                                        │
-│  ────────────────────────────────────                                        │
-│  Idle USDC in Arc Pool                                                       │
-│         │                                                                    │
-│         ▼                                                                    │
-│  Swap USDC → USYC (tokenized T-Bills)                                       │
-│         │                                                                    │
-│         ▼                                                                    │
-│  Earn ~4-5% APY (risk-free Treasury rate)                                   │
-│                                                                              │
-│  LAYER 2: PROTOCOL YIELD (Invoice Financing)                                │
-│  ────────────────────────────────────────────                                │
-│  When invoice needs funding:                                                 │
-│         │                                                                    │
-│         ▼                                                                    │
-│  Redeem USYC → USDC (instant liquidity)                                     │
-│         │                                                                    │
-│         ▼                                                                    │
-│  Fund invoice, earn 4-10% financing spread                                  │
-│                                                                              │
-│  COMBINED YIELD                                                              │
-│  ──────────────                                                              │
-│  Base (USYC):     ~4-5% APY on idle funds                                   │
-│  Protocol:        ~4-10% APY on deployed funds                              │
-│  Blended:         ~8-14% APY (depending on utilization)                     │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Capital State Machine
-
-```
-                    ┌─────────────────┐
-                    │   LP Deposits   │
-                    │     USDC        │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │  IDLE STATE     │
-                    │  USDC → USYC    │◄─────────────┐
-                    │  (Earning ~4%)  │              │
-                    └────────┬────────┘              │
-                             │                       │
-               Invoice approved                      │
-                             │                       │
-                             ▼                       │
-                    ┌─────────────────┐              │
-                    │ DEPLOYED STATE  │              │
-                    │  USYC → USDC    │              │
-                    │  Fund invoice   │              │
-                    │ (Earning ~8%)   │              │
-                    └────────┬────────┘              │
-                             │                       │
-               Invoice repaid                        │
-                             │                       │
-                             ▼                       │
-                    ┌─────────────────┐              │
-                    │   RETURNED      │              │
-                    │ Principal+Yield │──────────────┘
-                    └─────────────────┘
-```
-
-### Smart Contract: TreasuryManager.sol
-
-```solidity
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
-
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
-
-interface IUSYC {
-    function deposit(uint256 assets, address receiver) external returns (uint256 shares);
-    function redeem(uint256 shares, address receiver, address owner) external returns (uint256 assets);
-    function convertToAssets(uint256 shares) external view returns (uint256);
-    function convertToShares(uint256 assets) external view returns (uint256);
-    function balanceOf(address account) external view returns (uint256);
-}
-
-/**
- * @title Treasury Manager
- * @notice Manages idle USDC by depositing into USYC for Treasury yield
- * @dev Integrates with Hashnote's USYC for tokenized T-Bill exposure
- */
-contract TreasuryManager is AccessControl {
-    using SafeERC20 for IERC20;
-
-    bytes32 public constant POOL_ROLE = keccak256("POOL_ROLE");
-
-    IERC20 public immutable usdc;
-    IUSYC public immutable usyc;
-
-    // Minimum USDC to keep liquid (for immediate funding needs)
-    uint256 public liquidityBuffer;
-
-    // Tracking
-    uint256 public totalDeposited;      // USDC deposited to USYC
-    uint256 public totalYieldEarned;    // Cumulative Treasury yield
-
-    // Events
-    event DepositedToTreasury(uint256 usdcAmount, uint256 usycShares);
-    event RedeemedFromTreasury(uint256 usycShares, uint256 usdcAmount);
-    event YieldHarvested(uint256 yieldAmount);
-    event LiquidityBufferUpdated(uint256 newBuffer);
-
-    constructor(
-        address _usdc,
-        address _usyc,
-        uint256 _liquidityBuffer
-    ) {
-        usdc = IERC20(_usdc);
-        usyc = IUSYC(_usyc);
-        liquidityBuffer = _liquidityBuffer;
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    }
-
-    /**
-     * @notice Deposit idle USDC into USYC for Treasury yield
-     * @param amount USDC amount to deposit
-     */
-    function depositToTreasury(uint256 amount) external onlyRole(POOL_ROLE) returns (uint256 shares) {
-        require(amount > 0, "Amount must be > 0");
-
-        usdc.safeTransferFrom(msg.sender, address(this), amount);
-        usdc.approve(address(usyc), amount);
-
-        shares = usyc.deposit(amount, address(this));
-        totalDeposited += amount;
-
-        emit DepositedToTreasury(amount, shares);
-    }
-
-    /**
-     * @notice Redeem USYC to USDC for invoice funding
-     * @param usdcNeeded Amount of USDC needed
-     */
-    function redeemForFunding(uint256 usdcNeeded) external onlyRole(POOL_ROLE) returns (uint256 actualUsdc) {
-        uint256 sharesNeeded = usyc.convertToShares(usdcNeeded);
-        uint256 sharesAvailable = usyc.balanceOf(address(this));
-
-        require(sharesAvailable >= sharesNeeded, "Insufficient USYC balance");
-
-        actualUsdc = usyc.redeem(sharesNeeded, msg.sender, address(this));
-
-        // Calculate yield earned on this portion
-        uint256 originalDeposit = (totalDeposited * sharesNeeded) / (sharesAvailable + sharesNeeded);
-        if (actualUsdc > originalDeposit) {
-            totalYieldEarned += (actualUsdc - originalDeposit);
-        }
-        totalDeposited -= originalDeposit;
-
-        emit RedeemedFromTreasury(sharesNeeded, actualUsdc);
-    }
-
-    /**
-     * @notice Get current USYC value in USDC terms
-     */
-    function getTreasuryValue() public view returns (uint256) {
-        uint256 shares = usyc.balanceOf(address(this));
-        return usyc.convertToAssets(shares);
-    }
-
-    /**
-     * @notice Get unrealized yield (current value - deposited)
-     */
-    function getUnrealizedYield() public view returns (uint256) {
-        uint256 currentValue = getTreasuryValue();
-        if (currentValue > totalDeposited) {
-            return currentValue - totalDeposited;
-        }
-        return 0;
-    }
-
-    /**
-     * @notice Harvest yield without redeeming principal
-     */
-    function harvestYield() external onlyRole(POOL_ROLE) returns (uint256 yield) {
-        yield = getUnrealizedYield();
-        if (yield > 0) {
-            uint256 yieldShares = usyc.convertToShares(yield);
-            usyc.redeem(yieldShares, msg.sender, address(this));
-            totalYieldEarned += yield;
-            emit YieldHarvested(yield);
-        }
-    }
-
-    /**
-     * @notice Update liquidity buffer
-     */
-    function setLiquidityBuffer(uint256 newBuffer) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        liquidityBuffer = newBuffer;
-        emit LiquidityBufferUpdated(newBuffer);
-    }
-}
-```
-
-### Updated LiquidityPool.sol (with USYC)
-
-```solidity
-// Key additions to LiquidityPool.sol
-
-contract LiquidityPool is ERC4626, AccessControl {
-    // ... existing code ...
-
-    TreasuryManager public treasuryManager;
-
-    // Auto-deposit threshold (deposit to USYC when idle > threshold)
-    uint256 public autoDepositThreshold = 100_000 * 1e6; // 100k USDC
-
-    /**
-     * @notice Total assets including USYC position
-     */
-    function totalAssets() public view override returns (uint256) {
-        uint256 liquidUsdc = usdc.balanceOf(address(this));
-        uint256 treasuryValue = treasuryManager.getTreasuryValue();
-        return liquidUsdc + treasuryValue - totalDeployed;
-    }
-
-    /**
-     * @notice Available liquidity (liquid USDC + redeemable USYC)
-     */
-    function availableLiquidity() public view returns (uint256) {
-        return totalAssets() - totalDeployed;
-    }
-
-    /**
-     * @notice Optimize idle capital by depositing to USYC
-     * @dev Called periodically by keeper or after deposits
-     */
-    function optimizeIdleCapital() external {
-        uint256 liquidUsdc = usdc.balanceOf(address(this));
-        uint256 buffer = treasuryManager.liquidityBuffer();
-
-        if (liquidUsdc > buffer + autoDepositThreshold) {
-            uint256 toDeposit = liquidUsdc - buffer;
-            usdc.approve(address(treasuryManager), toDeposit);
-            treasuryManager.depositToTreasury(toDeposit);
-        }
-    }
-
-    /**
-     * @notice Route to Sui, redeeming from USYC if needed
-     */
-    function routeToSui(
-        uint256 amount,
-        bytes32 invoiceId
-    ) external onlyRole(ROUTER_ROLE) returns (bool) {
-        uint256 liquidUsdc = usdc.balanceOf(address(this));
-
-        // If not enough liquid USDC, redeem from USYC
-        if (liquidUsdc < amount) {
-            uint256 toRedeem = amount - liquidUsdc;
-            treasuryManager.redeemForFunding(toRedeem);
-        }
-
-        totalDeployed += amount;
-        emit LiquidityRouted(amount, invoiceId, 0);
-        return true;
-    }
-}
-```
-
-### Yield Calculation Example
-
-```
-Scenario: $10M pool, 60% average utilization
-
-IDLE CAPITAL ($4M):
-├── Deposited in USYC
-├── Treasury Rate: 4.5% APY
-└── Annual Yield: $180,000
-
-DEPLOYED CAPITAL ($6M):
-├── Financing invoices
-├── Protocol Spread: 8% APY (average)
-└── Annual Yield: $480,000
-
-TOTAL YIELD:
-├── Combined: $660,000
-├── Effective APY: 6.6% (blended)
-└── LP Share (80%): $528,000 = 5.28% net APY
-
-COMPARISON:
-├── Pure DeFi Lending: 3-5% APY
-├── Traditional SCF: 5-8% APY
-└── Seed Finance: 5-8% APY (with Treasury backing)
-
-ADVANTAGE: Risk-adjusted returns are higher because:
-├── Idle funds earn risk-free Treasury rate
-├── No opportunity cost on uninvested capital
-└── LPs get yield even at low utilization
-```
-
-### Integration with Arc Ecosystem
-
-```
-┌────────────────────────────────────────────────────────────────────────────┐
-│                        ARC TREASURY INTEGRATION                             │
-├────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│  LP Deposit Flow:                                                           │
-│  ────────────────                                                           │
-│  USDC (any chain) → Bridge Kit → Arc LiquidityPool                         │
-│                                      │                                      │
-│                                      ▼                                      │
-│                               TreasuryManager                               │
-│                                      │                                      │
-│                         ┌────────────┴────────────┐                        │
-│                         │                         │                         │
-│                         ▼                         ▼                         │
-│                    Keep Buffer              Deposit to USYC                 │
-│                    (liquid USDC)            (Treasury yield)                │
-│                                                                             │
-│  Invoice Funding Flow:                                                      │
-│  ─────────────────────                                                      │
-│  Invoice Approved → Check liquid USDC                                       │
-│                         │                                                   │
-│              ┌──────────┴──────────┐                                       │
-│              │                     │                                        │
-│         Sufficient            Insufficient                                  │
-│              │                     │                                        │
-│              ▼                     ▼                                        │
-│         Use liquid            Redeem USYC                                   │
-│           USDC                    │                                         │
-│              │                     │                                        │
-│              └──────────┬──────────┘                                       │
-│                         │                                                   │
-│                         ▼                                                   │
-│                  Route to Sui (CCTP)                                        │
-│                         │                                                   │
-│                         ▼                                                   │
-│                   Fund Invoice                                              │
-│                                                                             │
-└────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Key Benefits
-
-| Benefit | Description |
-|---------|-------------|
-| **No Idle Capital** | Every dollar earns yield, even when not financing invoices |
-| **Risk-Free Base** | Treasury rate is government-backed, minimal risk |
-| **Instant Liquidity** | USYC redeems to USDC instantly for funding needs |
-| **Competitive APY** | 8-14% combined vs 3-8% for pure DeFi |
-| **Low Utilization Protection** | LPs earn even when few invoices are financed |
-
-### USYC Contract Addresses (Mainnet)
-
-```
-Ethereum Mainnet:
-├── USYC Token: 0x136471a34f6ef19fE571EFFC1CA711fdb8E49f2b
-└── USYC Minter: [TBD based on Hashnote docs]
-
-Arc (when available):
-├── USYC Token: [To be deployed]
-└── Integration via Circle ecosystem
-```
-
----
-
 ## Development Phases
 
-### Phase 1: Foundation (Days 1-2)
+### Phase 1: MVP (2-3 weeks)
 - [ ] Set up monorepo (Turborepo)
-- [ ] Deploy Arc contracts to testnet
-- [ ] Deploy Sui contracts to devnet
+- [ ] Deploy Base contracts to Sepolia
 - [ ] Set up Circle SDK integration
 - [ ] Basic API structure
-
-### Phase 2: Core Flow (Days 3-4)
-- [ ] Invoice creation on Sui
-- [ ] Invoice approval flow
-- [ ] Arc → Sui bridge integration
-- [ ] Invoice funding mechanism
+- [ ] Invoice creation + approval flow
+- [ ] LP deposit/withdraw flow
 - [ ] Circle Wallet integration
+- [ ] Frontend dashboards
 
-### Phase 3: Settlement (Day 5)
-- [ ] Circle Gateway on-ramp (buyer repayment)
-- [ ] Circle Gateway off-ramp (supplier payout)
-- [ ] Sui → Arc return path
-- [ ] Yield calculation and distribution
-
-### Phase 4: Frontend (Day 6)
-- [ ] Buyer dashboard
-- [ ] Supplier dashboard
-- [ ] Financier dashboard
-- [ ] Wallet connection (RainbowKit for LPs)
-
-### Phase 5: Polish (Day 7)
+### Phase 2: Production Polish (2-3 weeks)
+- [ ] Circle Gateway integration (fiat on/off-ramp)
+- [ ] TreasuryManager for USYC yield (optional)
 - [ ] End-to-end testing
-- [ ] Demo video recording
-- [ ] Architecture diagram
-- [ ] Documentation
-- [ ] Pitch deck
+- [ ] Security audit
+- [ ] Mainnet deployment
 
----
-
-## Prize Qualification Checklist
-
-### Best Chain-Abstracted USDC Apps ($5,000)
-
-- [x] **Uses Arc as liquidity hub** — LPs deposit on Arc, unified pool
-- [x] **Chain abstraction** — Capital flows Arc ↔ Sui seamlessly
-- [x] **Cross-chain payments** — Reverse factoring is a payment/credit system
-- [x] **Seamless UX** — Companies never see crypto (Circle Wallets + Gateway)
-- [ ] **Functional MVP** — Working frontend + backend
-- [ ] **Architecture diagram** — With Circle tool labels
-- [ ] **Video demo** — 2-3 minutes
-
-### Required Tools Evidence:
-- **Arc**: LiquidityPool.sol deployed on Arc testnet
-- **Circle Gateway**: On/off-ramp for fiat settlement
-- **USDC**: All internal operations in USDC
-- **Circle Wallets**: Programmable wallets for Buyer/Supplier
-
-### Build Global Payouts ($2,500)
-
-- [x] **Global payout system** — Supplier payouts worldwide
-- [x] **Automated payout logic** — Smart contract triggers
-- [x] **Multi-recipient** — Multiple suppliers per buyer
-- [x] **Policy-based payouts** — Invoice approval = payout trigger
-- [ ] **Bridge Kit integration** — For LP deposits from other chains
+### Phase 3: Multi-Chain Expansion (If Needed)
+- [ ] Add CCTP integration for Ethereum/Arbitrum LPs
+- [ ] Consider Arc as aggregation layer (only if LP demand justifies complexity)
 
 ---
 
 ## Environment Variables
 
 ```env
-# Circle
-CIRCLE_API_KEY=
-CIRCLE_ENVIRONMENT=sandbox
+# Circle API
+CIRCLE_API_KEY=TEST_API_KEY:xxx:yyy  # Environment-prefixed key from Circle Console
+CIRCLE_ENTITY_SECRET=                 # 64-char alphanumeric entity secret
 
-# Sui
-SUI_RPC_URL=https://fullnode.devnet.sui.io
-SUI_PRIVATE_KEY=
+# Base Network
+BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
+BASE_SEPOLIA_CHAIN_ID=84532
+BASE_MAINNET_RPC_URL=https://mainnet.base.org
+BASE_MAINNET_CHAIN_ID=8453
 
-# Arc
-ARC_RPC_URL=
-ARC_PRIVATE_KEY=
+# Contract Addresses (Base Sepolia)
+BASE_SEPOLIA_USDC_ADDRESS=0x036CbD53842c5426634e7929541eC2318f3dCF7e
+BASE_CCTP_TOKEN_MESSENGER=0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5
+BASE_CCTP_MESSAGE_TRANSMITTER=0x7865fAfC2db2093669d92c0F33AeEF291086BEFD
 
-# USYC (Treasury)
+# Seed Finance Contracts (after deployment)
+BASE_LIQUIDITY_POOL_ADDRESS=
+BASE_INVOICE_REGISTRY_ADDRESS=
+BASE_EXECUTION_POOL_ADDRESS=
+BASE_PAYMENT_ROUTER_ADDRESS=
+
+# USYC (Treasury - Optional Phase 2)
 USYC_TOKEN_ADDRESS=0x136471a34f6ef19fE571EFFC1CA711fdb8E49f2b
-USYC_LIQUIDITY_BUFFER=100000000000  # 100k USDC in 6 decimals
+USYC_LIQUIDITY_BUFFER=100000000000  # 100k USDC (6 decimals on Base)
+
+# Circle Wallet IDs (from Circle Console)
+BASE_SEPOLIA_WALLET_ID=
 
 # Database
 DATABASE_URL=postgresql://...
 
 # Frontend
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=
-NEXT_PUBLIC_SUI_NETWORK=devnet
+NEXT_PUBLIC_BASE_CHAIN_ID=84532
+
+# Explorer
+BASESCAN_API_KEY=
 ```
 
 ---
@@ -1426,19 +1025,38 @@ NEXT_PUBLIC_SUI_NETWORK=devnet
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2026-01-31 | Use Sui for invoice logic | Object model perfect for invoices, fast finality |
-| 2026-01-31 | Use Arc for liquidity | Circle prize requirement, native USDC, EVM familiar |
+| 2026-01-31 | Base-only architecture | Simpler, faster to ship, lower risk, all Circle tools work natively |
+| 2026-01-31 | ERC-4626 for LP vault | Standard interface, automatic yield distribution via share price |
 | 2026-01-31 | Circle Wallets for companies | No wallet UX for business users |
-| 2026-01-31 | CCTP for bridging | Circle's own bridge, best integration with Arc |
-| 2026-01-31 | USYC for idle treasury | Dual-yield strategy: Treasury rate + invoice financing |
+| 2026-01-31 | Circle Gateway for fiat | Seamless fiat on/off-ramp integration |
+| 2026-01-31 | USDC 6 decimals | Standard on Base (vs 18 on Arc) |
+| 2026-01-31 | USYC treasury optional | Can add later if utilization is low, not critical for MVP |
+| 2026-01-31 | Skip Arc for production | Arc was hackathon-driven, not needed for core product value |
 
 ---
 
 ## One-Liner
 
-> "Seed Finance is a non-custodial reverse factoring protocol with dual-yield strategy: idle USDC earns Treasury yield via USYC while deployed capital finances invoices — all chain-abstracted via Arc, executed on Sui, settled through Circle Gateway. Companies never touch crypto, LPs earn 8-14% APY."
+> "Seed Finance is a non-custodial reverse factoring protocol on Base: LPs deposit USDC to an ERC-4626 vault, suppliers get early payment on approved invoices, buyers repay at maturity via Circle Gateway. Companies never touch crypto, LPs earn 5-10% APY from financing spreads."
 
 ---
 
 **Last Updated:** 2026-01-31
 **Status:** Ready for implementation
+
+---
+
+## Reference Documentation
+
+### Base / Circle
+- **Base Network Details:** See `docs/BASE-REFERENCE.md` for complete Base reference
+- **Base Docs:** https://docs.base.org
+- **Base Explorer (Testnet):** https://sepolia.basescan.org
+- **Base Explorer (Mainnet):** https://basescan.org
+- **Base Faucet:** https://www.coinbase.com/faucets/base-ethereum-sepolia-faucet
+- **Circle Developer Console:** https://console.circle.com
+- **Circle Gateway API:** https://developers.circle.com/gateway
+- **Circle Wallets Docs:** https://developers.circle.com/wallets
+
+### Architecture Analysis
+- **Why Base-Only:** See `docs/01_architecture_analysis.md` for full analysis

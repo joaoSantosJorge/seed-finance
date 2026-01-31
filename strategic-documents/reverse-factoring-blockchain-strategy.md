@@ -1,98 +1,75 @@
 # Seed Finance — Strategic Product Blueprint
 
-## Decentralized Reverse Factoring on Sui + Arc
+## Decentralized Reverse Factoring on Base L2
 
-**Version 2.0 | January 2026**
+**Version 4.0 | January 2026**
 
 ---
 
 ## Executive Summary
 
-Seed Finance is a decentralized reverse factoring protocol built on a dual-chain architecture:
+Seed Finance is a decentralized reverse factoring protocol built on **Base L2** with Circle integration:
 
-- **Arc (Circle L1)** — Chain-abstracted USDC liquidity hub
-- **Sui** — Credit execution layer for invoice lifecycle
-
-This architecture enables us to:
-1. Aggregate liquidity from any chain via Arc
-2. Execute complex credit logic efficiently on Sui
-3. Settle payouts to fiat via Circle Gateway
-4. Abstract crypto complexity for business users via Circle Wallets
+- **Single-chain deployment** on Base for simplicity and speed to market
+- **Circle Wallets** for business user abstraction
+- **Circle Gateway** for fiat on/off-ramp settlement
+- **ERC-4626 vault** for LP deposits with automatic yield distribution
 
 **Target Market:** $739B reverse factoring market (2026), growing at 10.9% CAGR to $1.89T by 2035.
 
 ---
 
-## Part 1: Why This Architecture
+## Part 1: Why Base-Only Architecture
 
-### Why Arc?
+### Architecture Evolution
 
-Arc is Circle's purpose-built L1 blockchain — the "Economic OS for the internet." It provides:
+| Version | Design | Reason |
+|---------|--------|--------|
+| V1 | Sui + Arc | Move language exploration |
+| V2 | Arc + Base | Hackathon prize alignment |
+| V3 | Arc + Base | Dual-chain with CCTP V2 |
+| **V4** | **Base only** | **Production optimization** |
 
-| Feature | Benefit for Seed Finance |
-|---------|-------------------------|
-| **Native USDC** | No wrapped tokens, direct stablecoin operations |
-| **Chain Abstraction** | LPs deposit from any chain, unified liquidity |
-| **EVM Compatible** | Familiar Solidity tooling, fast development |
-| **Circle Ecosystem** | Native Gateway, Wallets, CCTP integration |
-| **Enterprise Grade** | Built for institutional capital markets |
+### Why We Chose Base-Only
 
-**Arc's Role:** Liquidity aggregation, LP accounting, yield distribution, bridge routing.
+| Factor | Arc + Base | Base Only | Winner |
+|--------|------------|-----------|--------|
+| Dev Time | 6-8 weeks | 2-3 weeks | Base |
+| Audit Scope | 2 chains | 1 chain | Base |
+| Bridge Risk | CCTP dependency | None | Base |
+| Circle Tools | Both have | Both have | Tie |
+| Complexity | Higher | Lower | Base |
 
-### Why Sui?
+**Conclusion:** Base-only delivers the same functionality with lower risk and faster time to market.
 
-Sui's object-centric model is ideal for invoice finance:
-
-| Feature | Benefit for Seed Finance |
-|---------|-------------------------|
-| **Object Model** | Invoices as first-class objects with clear ownership |
-| **Fast Finality** | Sub-second confirmation for approval workflows |
-| **Move Language** | Strong type safety for financial logic |
-| **Parallel Execution** | Handle thousands of invoices concurrently |
-| **Low Costs** | Affordable for small invoice amounts |
-
-**Sui's Role:** Invoice registry, approval workflow, credit scoring, funding execution.
-
-### Why Not Single Chain?
-
-| Approach | Problem |
-|----------|---------|
-| Arc only | Move's object model superior for invoice logic |
-| Sui only | Lacks Circle's USDC ecosystem depth |
-| EVM L2s | Miss both Arc's abstraction and Sui's object model |
-
-**Dual-chain maximizes strengths of each platform.**
+See [Architecture Analysis](../docs/01_architecture_analysis.md) for detailed rationale.
 
 ---
 
 ## Part 2: System Architecture
 
-### 2.1 Layer Responsibilities
+### Layer Responsibilities
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                          SEED FINANCE LAYERS                                 │
+│                     SEED FINANCE LAYERS (BASE L2)                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │                     LAYER 1: CAPITAL (Arc)                             │  │
+│  │                     LAYER 1: CAPITAL (Base)                            │  │
 │  │  • LiquidityPool.sol — ERC-4626 vault for LP deposits                 │  │
-│  │  • YieldDistributor.sol — Calculates and distributes yield            │  │
-│  │  • BridgeRouter.sol — Routes USDC to Sui via CCTP                     │  │
-│  │  • Aggregates USDC from Ethereum, Polygon, Base, Arbitrum...          │  │
+│  │  • sfUSDC share tokens — Automatic yield distribution                 │  │
+│  │  • TreasuryManager.sol — USYC yield optimization (optional)          │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                      │                                       │
-│                                      │ CCTP Bridge                           │
 │                                      ▼                                       │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │                     LAYER 2: CREDIT (Sui)                              │  │
-│  │  • invoice.move — Invoice object lifecycle                            │  │
-│  │  • execution_pool.move — Temporary USDC holding                       │  │
-│  │  • payment_router.move — Funding and repayment logic                  │  │
-│  │  • credit_oracle.move — On-chain credit scoring                       │  │
+│  │                     LAYER 2: CREDIT (Base)                             │  │
+│  │  • InvoiceRegistry.sol — Invoice lifecycle management                 │  │
+│  │  • ExecutionPool.sol — USDC holding for funding                       │  │
+│  │  • PaymentRouter.sol — Funding and repayment logic                    │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                      │                                       │
-│                                      │ Circle SDK                            │
 │                                      ▼                                       │
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
 │  │                   LAYER 3: SETTLEMENT (Circle)                         │  │
@@ -104,212 +81,106 @@ Sui's object-centric model is ideal for invoice finance:
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.2 Complete Transaction Flow
+### Complete Transaction Flow
 
 ```
 PHASE 1: LIQUIDITY DEPOSIT
 ──────────────────────────
-LP (Ethereum)  ─┐
-LP (Polygon)   ─┼──► Bridge Kit ──► Arc LiquidityPool ──► sfUSDC tokens
-LP (Base)      ─┘
+LP deposits USDC → Base LiquidityPool → sfUSDC tokens
 
 PHASE 2: INVOICE CREATION
 ─────────────────────────
-Supplier ──► Circle Wallet ──► Sui: invoice::create()
-                                    │
-                                    ▼
-                            Invoice Object (PENDING)
-                            • buyer address
-                            • supplier address
-                            • face_value
-                            • maturity_date
-                            • discount_rate
+Supplier → Circle Wallet → Base: InvoiceRegistry.createInvoice()
+                                 │
+                                 ▼
+                         Invoice Created (PENDING)
 
 PHASE 3: BUYER APPROVAL
 ───────────────────────
-Buyer ──► Circle Wallet ──► Sui: invoice::approve()
-                                 │
-                                 ▼
-                         Invoice status: APPROVED
-                         Event: InvoiceApproved
+Buyer → Circle Wallet → Base: InvoiceRegistry.approveInvoice()
+                              │
+                              ▼
+                      Invoice status: APPROVED
+                      Event: InvoiceApproved
 
-PHASE 4: FUNDING TRIGGER
-────────────────────────
-Backend (event listener) ◄── InvoiceApproved
-         │
-         ▼
-Arc: BridgeRouter.routeToSui(amount, invoiceId)
-         │
-         ▼ (CCTP transfer)
-Sui: execution_pool::receive_from_arc()
-         │
-         ▼
-Sui: payment_router::fund_invoice()
-         │
-         ▼
+PHASE 4: FUNDING
+────────────────
+Backend detects InvoiceApproved event
+        │
+        ▼
+Base: PaymentRouter.requestFunding()
+        │
+        ▼
+LiquidityPool.deployForFunding() → ExecutionPool
+        │
+        ▼
+ExecutionPool.fundInvoice() → USDC to Supplier
+        │
+        ▼
 Invoice status: FUNDED
-USDC ──► Supplier's Circle Wallet
 
 PHASE 5: SUPPLIER PAYOUT
 ────────────────────────
-Supplier's Circle Wallet ──► Circle Gateway ──► Bank Account
-                            (USDC → Fiat)
+Supplier's Circle Wallet → Circle Gateway → Bank Account
+                          (USDC → Fiat)
 
 PHASE 6: BUYER REPAYMENT (at maturity)
 ──────────────────────────────────────
-Buyer's Bank ──► Circle Gateway ──► Buyer's Circle Wallet
-               (Fiat → USDC)
-                                          │
-                                          ▼
-                            Sui: payment_router::repay()
-                                          │
-                                          ▼
-                            Invoice status: PAID
+Buyer's Bank → Circle Gateway → Buyer's Circle Wallet
+              (Fiat → USDC)
+                                       │
+                                       ▼
+                       Base: ExecutionPool.receiveRepayment()
+                                       │
+                                       ▼
+                       Invoice status: PAID
 
-PHASE 7: CAPITAL RETURN
-───────────────────────
-Sui: execution_pool::return_to_arc()
-         │
-         ▼ (CCTP transfer)
-Arc: LiquidityPool receives (principal + yield)
-         │
-         ▼
-sfUSDC share value increases
-LPs earn yield
+PHASE 7: YIELD DISTRIBUTION
+───────────────────────────
+ExecutionPool → LiquidityPool.receiveRepayment(principal, yield)
+                       │
+                       ▼
+               sfUSDC share value increases
+               LPs earn yield automatically
 ```
 
 ---
 
 ## Part 3: Smart Contract Design
 
-### 3.1 Arc Contracts (Solidity)
+### Contract Overview
 
-#### LiquidityPool.sol — Core Vault
+| Contract | Purpose |
+|----------|---------|
+| `LiquidityPool.sol` | ERC-4626 vault for LP deposits, yield distribution |
+| `InvoiceRegistry.sol` | Invoice CRUD, status lifecycle, access control |
+| `ExecutionPool.sol` | USDC holding, funding, repayment processing |
+| `PaymentRouter.sol` | Orchestration, batch operations, fee management |
+| `TreasuryManager.sol` | USYC yield for idle capital (Phase 2) |
 
-```
-Purpose: Hold aggregated USDC from all chains
-Standard: ERC-4626 (tokenized vault)
+### Key Design Decisions
 
-Functions:
-├── deposit(uint256 assets) → uint256 shares
-├── withdraw(uint256 shares) → uint256 assets
-├── routeToSui(uint256 amount, bytes32 invoiceId)
-├── receiveFromSui(uint256 principal, uint256 yield)
-├── availableLiquidity() → uint256
-└── utilizationRate() → uint256
-
-State:
-├── totalDeployed: USDC currently on Sui
-├── totalYieldEarned: Cumulative yield
-└── pendingTransfers: In-flight bridge transactions
-
-Events:
-├── LiquidityRouted(amount, invoiceId, suiDestination)
-├── LiquidityReturned(principal, yield, invoiceId)
-└── YieldDistributed(amount, timestamp)
-```
-
-#### BridgeRouter.sol — Cross-Chain Routing
-
-```
-Purpose: Route USDC between Arc and Sui
-Integration: Circle CCTP
-
-Functions:
-├── routeToSui(bytes32 invoiceId, uint256 amount, bytes32 suiRecipient)
-├── confirmArrival(bytes32 messageHash)
-└── handleReturn(bytes32 messageHash, uint256 amount)
-
-Workflow:
-1. Pull USDC from LiquidityPool
-2. Approve CCTP TokenMessenger
-3. Call depositForBurn (Arc → Sui)
-4. Store pending transfer
-5. Confirm on Sui arrival event
-```
-
-### 3.2 Sui Contracts (Move)
-
-#### invoice.move — Invoice Lifecycle
-
-```
-Purpose: Manage invoice objects
-Model: Shared objects with access control
-
-Structs:
-└── Invoice
-    ├── id: UID
-    ├── buyer: address
-    ├── supplier: address
-    ├── face_value: u64
-    ├── discount_rate_bps: u64
-    ├── maturity_date: u64
-    ├── invoice_hash: vector<u8> (IPFS CID)
-    ├── status: u8
-    └── timestamps (created, funded, paid)
-
-Status Flow:
-PENDING → APPROVED → FUNDED → PAID
-              ↓
-         CANCELLED
-
-Entry Functions:
-├── create() — Supplier creates invoice
-├── approve() — Buyer approves
-├── cancel() — Either party cancels (if PENDING)
-
-Internal Functions:
-├── mark_funded() — Called by execution_pool
-└── mark_paid() — Called by payment_router
-
-Events:
-├── InvoiceCreated { invoice_id, buyer, supplier, face_value }
-├── InvoiceApproved { invoice_id, buyer, approved_at }
-├── InvoiceFunded { invoice_id, amount, discount }
-└── InvoicePaid { invoice_id, amount, paid_at }
-```
-
-#### execution_pool.move — USDC Holding
-
-```
-Purpose: Temporary USDC holding on Sui
-Pattern: Shared singleton
-
-Structs:
-└── ExecutionPool
-    ├── id: UID
-    ├── balance: Balance<USDC>
-    ├── admin: address
-    └── tracking (total_funded, total_repaid, active_invoices)
-
-Entry Functions:
-├── receive_from_arc(funds: Coin<USDC>)
-├── fund_invoice(invoice: &mut Invoice)
-├── receive_repayment(invoice: &mut Invoice, payment: Coin<USDC>)
-└── return_to_arc(amount, yield_amount)
-
-Workflow:
-1. Receive USDC from Arc bridge
-2. Hold until invoice ready to fund
-3. Transfer to supplier on funding
-4. Receive repayment from buyer
-5. Return principal + yield to Arc
-```
+| Decision | Rationale |
+|----------|-----------|
+| ERC-4626 vault | Standard interface, automatic yield via share price |
+| Access control | Role-based (EXECUTOR_ROLE, ROUTER_ROLE, OPERATOR_ROLE) |
+| Events for everything | Backend integration via event listeners |
+| Single-chain | Eliminates bridge complexity and risk |
 
 ---
 
 ## Part 4: Circle Integration
 
-### 4.1 Circle Wallets
+### Circle Wallets
 
 **Purpose:** Abstract crypto for business users
 
 ```
 User Registration:
 1. User signs up with email
-2. Backend creates Circle Wallet
+2. Backend creates Circle Wallet (SCA - Smart Contract Account)
 3. Wallet address stored in user profile
-4. All transactions signed by Circle (custodial)
+4. All transactions signed by Circle (developer-controlled)
 
 Wallet Types:
 ├── Buyer Wallet — Holds USDC for repayments
@@ -317,7 +188,7 @@ Wallet Types:
 └── LP Wallet — (Optional) Non-custodial via RainbowKit
 ```
 
-### 4.2 Circle Gateway
+### Circle Gateway
 
 **Purpose:** Fiat on/off-ramp
 
@@ -326,48 +197,20 @@ On-Ramp (Buyer Repayment):
 1. Buyer initiates bank transfer
 2. Gateway converts USD → USDC
 3. USDC deposited to Buyer's Circle Wallet
-4. Backend triggers repayment on Sui
+4. Backend triggers repayment on Base
 
 Off-Ramp (Supplier Payout):
 1. Supplier's Circle Wallet holds USDC
 2. Supplier requests payout
 3. Gateway converts USDC → USD
 4. Wire transfer to Supplier's bank
-
-Supported Methods:
-├── Wire (ACH, SEPA)
-├── Cards (coming soon)
-└── Crypto (USDC direct)
-```
-
-### 4.3 Circle CCTP
-
-**Purpose:** Cross-chain USDC transfer (Arc ↔ Sui)
-
-```
-Arc → Sui:
-1. BridgeRouter calls TokenMessenger.depositForBurn()
-2. USDC burned on Arc
-3. Attestation generated
-4. USDC minted on Sui
-5. execution_pool receives funds
-
-Sui → Arc:
-1. execution_pool initiates return
-2. USDC burned on Sui
-3. Attestation generated
-4. USDC minted on Arc
-5. LiquidityPool receives funds
-
-Latency: ~15-20 minutes (attestation + confirmation)
-Cost: Gas on both chains only, no bridge fee
 ```
 
 ---
 
 ## Part 5: Competitive Advantages
 
-### 5.1 vs Traditional Banks
+### vs Traditional Banks
 
 | Metric | Banks | Seed Finance |
 |--------|-------|--------------|
@@ -378,7 +221,7 @@ Cost: Gas on both chains only, no bridge fee
 | Transparency | Opaque | Full on-chain |
 | Access | Large corps only | Anyone |
 
-### 5.2 vs Fintech Competitors
+### vs Fintech Competitors
 
 | Metric | Fintechs | Seed Finance |
 |--------|----------|--------------|
@@ -388,13 +231,13 @@ Cost: Gas on both chains only, no bridge fee
 | Composability | None | Full DeFi |
 | Audit | Trust us | Verify on-chain |
 
-### 5.3 Unique Blockchain Advantages
+### Unique Blockchain Advantages
 
 1. **Immutable Invoice Registry** — Zero double-financing fraud
 2. **Programmable Payments** — Auto-execute at maturity
 3. **Composable LP Tokens** — Use sfUSDC as collateral elsewhere
 4. **Portable Credit History** — On-chain reputation
-5. **Global Liquidity** — Access $40B+ DeFi ecosystem
+5. **Global Liquidity** — Access DeFi ecosystem
 
 ---
 
@@ -468,89 +311,69 @@ Fee Distribution:
 
 ---
 
-## Part 8: MVP Development (7 Days)
+## Part 8: Development Phases
 
-### Day 1-2: Contracts
-- [ ] Arc: LiquidityPool.sol
-- [ ] Arc: BridgeRouter.sol
-- [ ] Sui: invoice.move
-- [ ] Sui: execution_pool.move
+### Phase 1: MVP (2-3 weeks)
+- [ ] Set up monorepo (Turborepo)
+- [ ] Deploy Base contracts to Sepolia
+- [ ] Set up Circle SDK integration
+- [ ] Basic API structure
+- [ ] Invoice creation + approval flow
+- [ ] LP deposit/withdraw flow
+- [ ] Circle Wallet integration
+- [ ] Frontend dashboards
 
-### Day 3-4: Integration
-- [ ] CCTP bridge integration
-- [ ] Circle Wallet SDK
-- [ ] Circle Gateway API
-- [ ] Backend event listeners
+### Phase 2: Production Polish (2-3 weeks)
+- [ ] Circle Gateway integration (fiat on/off-ramp)
+- [ ] End-to-end testing
+- [ ] Security audit
+- [ ] Mainnet deployment
 
-### Day 5: Frontend
-- [ ] Buyer dashboard
-- [ ] Supplier dashboard
-- [ ] Financier dashboard
-
-### Day 6: Testing
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] Testnet deployment
-
-### Day 7: Polish
-- [ ] Bug fixes
-- [ ] Demo video
-- [ ] Architecture diagram
-- [ ] Documentation
+### Phase 3: Optimization (If Needed)
+- [ ] TreasuryManager for USYC yield
+- [ ] CCTP integration for multi-chain LPs
+- [ ] Advanced credit scoring
 
 ---
 
-## Part 9: Prize Alignment
+## Part 9: Key Metrics
 
-### Best Chain-Abstracted USDC Apps ($5,000)
+### Success Indicators
 
-**Qualification:**
-- [x] Uses Arc as liquidity hub
-- [x] Multi-chain LP deposits
-- [x] Cross-chain capital routing
-- [x] Seamless UX for end users
-- [x] Real credit/payment use case
+| Metric | MVP Target | 6-Month Target |
+|--------|------------|----------------|
+| TVL | $100K | $5M |
+| Invoices Funded | 10 | 500 |
+| Unique Suppliers | 5 | 100 |
+| Unique Buyers | 5 | 50 |
+| LP Count | 10 | 100 |
+| Default Rate | <2% | <1% |
 
-**Required Tools:**
-- Arc ✓
-- Circle Gateway ✓
-- USDC ✓
-- Circle Wallets ✓
+### Technical Metrics
 
-### Build Global Payouts ($2,500)
-
-**Qualification:**
-- [x] Global payout system
-- [x] Automated payout logic
-- [x] Multi-recipient settlement
-- [x] Policy-based payouts
-
-**Required Tools:**
-- Arc ✓
-- Circle Gateway ✓
-- Circle Wallets ✓
-- Bridge Kit ✓
+| Metric | Target |
+|--------|--------|
+| Transaction Finality | <5 seconds |
+| Gas Cost per TX | <$0.01 |
+| Uptime | 99.9% |
+| API Response Time | <200ms |
 
 ---
 
 ## Conclusion
 
-Seed Finance leverages the unique strengths of both Arc and Sui:
+Seed Finance leverages Base L2 and Circle's infrastructure to deliver a superior reverse factoring experience:
 
-- **Arc** provides chain-abstracted USDC liquidity and Circle ecosystem integration
-- **Sui** provides efficient credit execution with its object model
-
-This dual-chain approach creates structural advantages that single-chain solutions cannot match:
-
-1. **Best of both worlds** — EVM liquidity + Move efficiency
-2. **Circle native** — Deep integration with Gateway, Wallets, CCTP
+1. **Single-chain simplicity** — All contracts on Base, no bridge risk
+2. **Circle integration** — Wallets, Gateway, USDC natively supported
 3. **Non-custodial** — Smart contracts only, no intermediary custody
 4. **Global scale** — Cross-border without friction
+5. **Fast to market** — 2-3 weeks to MVP
 
 **The result:** A reverse factoring protocol that's faster, cheaper, and more transparent than any alternative.
 
 ---
 
-*Document Version 2.0*
+*Document Version 4.0*
 *Updated January 2026*
-*Sui + Arc Architecture*
+*Base-Only Production Architecture*
