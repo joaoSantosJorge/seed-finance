@@ -1,0 +1,1 @@
+This has been 1 day of work. Imagine what I can do in 100 days of work. Imagine what this can become with 1000 days of work. Imagine what this can become with 10 000 days of work.
