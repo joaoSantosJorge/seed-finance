@@ -73,7 +73,7 @@ Reverse factoring (also called supply chain finance) allows suppliers to get pai
 | Contracts | Solidity (ERC-4626 vault) |
 | Fiat Rails | Circle Gateway |
 | User Wallets | Circle Wallets |
-| Frontend | Next.js 14, RainbowKit |
+| Frontend | Vite + React 19, Tailwind CSS |
 
 ---
 
@@ -81,21 +81,18 @@ Reverse factoring (also called supply chain finance) allows suppliers to get pai
 
 ```
 seed-finance/
-├── contracts/
-│   └── base/             # Solidity contracts for Base
-│       ├── LiquidityPool.sol
-│       ├── InvoiceRegistry.sol
-│       ├── ExecutionPool.sol
-│       └── PaymentRouter.sol
-├── apps/
-│   ├── web/              # Next.js frontend
-│   └── api/              # Backend API
-├── packages/
-│   └── shared/           # Shared types and utilities
+├── dashboard/              # Vite + React frontend
+│   └── src/
+│       └── ReverseFactoringDashboard.jsx
 ├── docs/
 │   ├── 01_architecture_analysis.md
-│   └── BASE-REFERENCE.md
-└── strategic-documents/
+│   ├── BASE-REFERENCE.md
+│   └── archive/
+│       └── ARC-REFERENCE.md  # Historical reference
+├── strategic-documents/
+│   └── reverse-factoring-blockchain-strategy.md
+├── CLAUDE.md               # Technical implementation guide
+└── README.md
 ```
 
 ---
