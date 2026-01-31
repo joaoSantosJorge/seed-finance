@@ -1,302 +1,148 @@
-# 🏁 Seed Finance - Supply chain Finance product (Reverse Factoring)
-**Goal:**  
-Build a *functional*, end-to-end **DeFi reverse factoring MVP** that:
-- Uses **Sui** for invoice + credit logic
-- Uses **Circle Arc** as a **chain-abstracted USDC liquidity hub**
-- Uses **Circle Gateway** for payouts / settlement abstraction
-- Is **non-custodial**
-- Clearly qualifies for **Circle’s “Best Chain-Abstracted USDC Apps” prize**
+# Seed Finance
 
-Time horizon: **7 days**
+**Decentralized Reverse Factoring Protocol**
+
+Supply chain finance infrastructure where USDC liquidity is chain-abstracted via Arc, invoices execute on Sui, and payouts settle through Circle Gateway.
 
 ---
 
-## 🧠 Locked Product Definition (updated)
+## What is Reverse Factoring?
 
-### What the product DOES
-1. Crypto-native LPs deposit USDC **on any chain**
-2. Arc aggregates USDC as a **single liquidity surface**
-3. Invoices are created & approved on **Sui**
-4. When funding is needed:
-   - USDC is routed **from Arc → Sui**
-   - Supplier gets paid
-5. Buyer repays at maturity
-6. USDC flows **back to Arc**
-7. LPs earn yield
+Reverse factoring (also called supply chain finance) allows suppliers to get paid early on approved invoices, while buyers maintain their payment terms. Our protocol makes this:
 
-### What companies see
-- Upload invoice
-- Get paid to bank (abstracted)
-- No wallets
-- No crypto UX
+- **Instant** — T+0 settlement vs T+2-5 with banks
+- **Global** — Cross-border without forex friction
+- **Transparent** — On-chain audit trail
+- **Non-custodial** — Smart contracts, not intermediaries
 
 ---
 
-## 🧩 Architecture (Circle-aligned)
+## Architecture
 
-### On-chain
-- **Sui**
-  - Invoice objects
-  - Funding & repayment logic
-
-### Cross-chain liquidity
-- **Arc**
-  - Aggregates USDC from multiple chains
-  - Routes liquidity where needed
-
-### Payments
-- **Circle Gateway**
-  - On/off-ramp abstraction
-  - Settlement to suppliers & LPs
-
----
-
-## 📅 Build Order (UPDATED with Circle steps)
-
----
-
-# DAY 1 — Product lock + contract skeleton
-
-### 1. Lock the full Circle-aligned flow
-
-
-
-
-LP deposits USDC (any chain)
-↓
-Arc
-(Chain-abstracted liquidity)
-↓
-Sui Invoice Contract
-↓
-Supplier payout (via Circle Gateway)
-
-
-### 2. Create Move package (Sui)
-- Invoice struct
-- Pool struct (Sui-side pool balance)
-
-### 3. Define enums & states
-- CREATED
-- APPROVED
-- FUNDED
-- PAID
-
-**Goal:** Contracts compile, no logic yet.
+```
+                    ┌─────────────────────┐
+                    │  Liquidity Providers │
+                    │   (Deposit USDC)     │
+                    └──────────┬──────────┘
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────┐
+│                    ARC (Circle L1)                    │
+│          Chain-Abstracted USDC Liquidity Hub         │
+└──────────────────────────┬───────────────────────────┘
+                           │
+              ┌────────────┴────────────┐
+              │    Cross-Chain Bridge    │
+              │     (Circle CCTP)        │
+              └────────────┬────────────┘
+                           │
+                           ▼
+┌──────────────────────────────────────────────────────┐
+│                   SUI BLOCKCHAIN                      │
+│           Credit Execution Layer (Move)              │
+│    Invoice Objects | Approvals | Funding Logic       │
+└──────────────────────────┬───────────────────────────┘
+                           │
+                           ▼
+┌──────────────────────────────────────────────────────┐
+│                  CIRCLE GATEWAY                       │
+│           USDC ↔ Fiat Settlement                     │
+│    Supplier bank payouts | Buyer repayments          │
+└──────────────────────────────────────────────────────┘
+```
 
 ---
 
-# DAY 2 — Sui liquidity pool (execution layer)
+## How It Works
 
-> ⚠️ Important: This is the **execution pool**, not the capital source.
-
-### 1. Create pool on Sui
-- Holds USDC temporarily
-- Receives liquidity **from Arc**
-
-### 2. Implement:
-- `receive_liquidity_from_arc()`
-- `get_pool_balance()`
-
-No LP accounting yet.
-
-**Goal:** Sui is ready to accept routed USDC.
+1. **LPs deposit USDC** on Arc (from any chain)
+2. **Supplier creates invoice** on Sui
+3. **Buyer approves invoice** on Sui
+4. **Capital routes from Arc → Sui** to fund invoice
+5. **Supplier receives fiat** via Circle Gateway (no crypto UX)
+6. **Buyer repays at maturity** via Circle Gateway
+7. **Capital returns to Arc** with yield for LPs
 
 ---
 
-# DAY 3 — Invoice lifecycle (unchanged)
+## Tech Stack
 
-### 1. Create invoice (supplier)
-### 2. Approve invoice (buyer)
-### 3. Query invoices by role
-
-**Goal:** Invoice objects work end-to-end.
-
----
-
-# DAY 4 — Circle Arc integration (KEY DAY)
-
-### 1. Arc liquidity abstraction
-- Treat Arc as:
-  - “Unified USDC vault”
-- Simulate:
-  - LP deposits on multiple chains
-  - Arc exposes total available USDC
-
-### 2. Funding trigger logic
-When invoice is approved:
-- Check Arc liquidity
-- Request USDC routing → Sui pool
-
-> For hackathon:
-> - Real Arc SDK calls OR
-> - Minimal functional mock clearly labeled
-
-**Goal:** Capital is no longer chain-specific.
+| Layer | Technology |
+|-------|------------|
+| Liquidity Hub | Arc (Circle L1) — Solidity |
+| Credit Logic | Sui — Move |
+| Bridging | Circle CCTP |
+| Fiat Rails | Circle Gateway |
+| User Wallets | Circle Wallets |
+| Frontend | Next.js 14, RainbowKit |
 
 ---
 
-# DAY 5 — Funding + payout (Circle Gateway)
+## Project Structure
 
-### 1. Fund invoice
-- USDC arrives on Sui
-- Pool → supplier
-
-### 2. Circle Gateway payout
-- USDC → Circle Gateway
-- Gateway → “bank account” (mocked)
-
-**Important:**
-- Show Gateway integration in code
-- Fiat leg can be simulated
-
-**Goal:** “Supplier doesn’t touch crypto” story is real.
-
----
-
-# DAY 6 — Repayment loop + LP settlement
-
-### 1. Buyer repayment
-- Buyer pays (mocked fiat)
-- Circle Gateway → USDC
-
-### 2. USDC return
-- USDC → Arc
-- Arc balance increases
-
-### 3. Yield visible
-- Arc liquidity > initial deposits
-
-**Goal:** Full capital loop closes.
+```
+seed-finance/
+├── contracts/
+│   ├── arc/          # Solidity contracts for Arc
+│   └── sui/          # Move contracts for Sui
+├── apps/
+│   ├── web/          # Next.js frontend
+│   └── api/          # Backend API
+├── packages/
+│   └── shared/       # Shared types and utilities
+├── dashboard/        # Strategy visualization
+└── strategic-documents/
+```
 
 ---
 
-# DAY 7 — Frontend + pitch polish
+## Development
 
-### Frontend pages
+```bash
+# Install dependencies
+npm install
 
+# Run development server
+npm run dev
 
+# Run tests
+npm run test
 
-/financier
-
-view Arc liquidity
-
-deposit USDC (simulated multi-chain)
-
-/supplier
-
-create invoice
-
-see payout status
-
-/buyer
-
-approve invoice
-
-repay invoice
-
-
-### Deliverables
-- Working UI
-- Architecture diagram
-- README
-- 2–3 min demo video
+# Deploy contracts
+npm run deploy:arc-testnet
+npm run deploy:sui-devnet
+```
 
 ---
 
-## 🏗️ Architecture Diagram — REQUIRED LABELS (Circle expects these)
+## Circle Prize Submission
 
-Use **these exact concepts and labels** in your diagram.
+This project targets:
 
----
+- **Best Chain-Abstracted USDC Apps Using Arc as a Liquidity Hub** ($5,000)
+- **Build Global Payouts and Treasury Systems with USDC on Arc** ($2,500)
 
-### Actors
-- **Liquidity Providers (Crypto-native)**
-- **Suppliers (Off-chain companies)**
-- **Buyers (Off-chain companies)**
-
----
-
-### Components (label exactly)
-
-#### 🔵 Arc — Liquidity Hub
-- “Chain-abstracted USDC liquidity”
-- “Aggregates USDC across chains”
-- “Routes capital where needed”
-
-#### 🟣 Sui — Credit Execution Layer
-- “Invoice objects”
-- “Buyer approval”
-- “Funding & repayment logic”
-- “Non-custodial smart contracts”
-
-#### 🟢 Circle Gateway — Settlement Layer
-- “On/off-ramp abstraction”
-- “USDC ↔ fiat settlement”
-- “Enterprise-grade payouts”
+### Required Circle Tools Used:
+- Arc — Liquidity aggregation
+- Circle Gateway — Fiat on/off-ramp
+- Circle Wallets — User abstraction
+- USDC — All internal operations
+- Bridge Kit — Multi-chain LP deposits
 
 ---
 
-### Data flows (arrow labels)
+## Documentation
 
-1. **USDC Deposit**
-   - “USDC deposited from multiple chains → Arc”
-
-2. **Liquidity Routing**
-   - “Arc routes USDC → Sui for invoice funding”
-
-3. **Invoice Funding**
-   - “Sui smart contract funds approved invoice”
-
-4. **Supplier Payout**
-   - “USDC → Circle Gateway → Bank account (abstracted)”
-
-5. **Buyer Repayment**
-   - “Fiat → Circle Gateway → USDC”
-
-6. **Capital Return**
-   - “USDC returned to Arc liquidity pool”
+- [Technical Implementation Guide](./CLAUDE.md) — Detailed specs
+- [Strategy Document](./strategic-documents/reverse-factoring-blockchain-strategy.md)
+- [Interactive Dashboard](./dashboard/) — Visual architecture
 
 ---
 
-### Trust & Custody annotations (important)
+## License
 
-- “Protocol is non-custodial”
-- “No private keys held by backend”
-- “Smart contracts only route funds”
-
-Judges *look* for this.
+MIT
 
 ---
 
-## 🎯 Circle Prize Alignment (explicit)
-
-### Target prize
-🏆 **Best Chain-Abstracted USDC Apps Using Arc as a Liquidity Hub**
-
-### Why this qualifies
-- Uses Arc as unified liquidity surface
-- Demonstrates cross-chain capital routing
-- Abstracts complexity from end users
-- Real DeFi credit use-case
-
----
-
-## 🚫 What NOT to overbuild
-
-- ❌ Full Bridge Kit flows
-- ❌ Real bank accounts
-- ❌ Full Circle Wallet infra
-- ❌ LP share tokens
-
-Show intent + functionality.
-
----
-
-## 🎤 One-liner (final)
-
-> “We built a non-custodial reverse factoring protocol where USDC liquidity is chain-abstracted via Arc, invoices execute on Sui, and payouts settle through Circle Gateway — companies never touch crypto.”
-
----
-
-**If it moves USDC, changes state, and closes the loop — it’s real.**
+*Built for the future of supply chain finance.*
