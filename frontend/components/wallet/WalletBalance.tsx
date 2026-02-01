@@ -2,14 +2,13 @@
 
 import { useUserPosition } from '@/hooks';
 import { Skeleton } from '@/components/ui';
-import { Wallet } from 'lucide-react';
 
 interface WalletBalanceProps {
   showIcon?: boolean;
   className?: string;
 }
 
-export function WalletBalance({ showIcon = true, className }: WalletBalanceProps) {
+export function WalletBalance({ className }: WalletBalanceProps) {
   const { formattedUsdcBalance, isLoading, isConnected } = useUserPosition();
 
   if (!isConnected) {
@@ -17,13 +16,12 @@ export function WalletBalance({ showIcon = true, className }: WalletBalanceProps
   }
 
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
-      {showIcon && <Wallet className="w-4 h-4 text-cool-gray" />}
-      <span className="text-body-sm text-cool-gray">USDC:</span>
+    <div className={`flex items-center gap-2 px-3 py-2 border-2 border-[var(--border-color)] bg-[var(--bg-card)] ${className}`}>
+      <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">USDC:</span>
       {isLoading ? (
         <Skeleton className="h-4 w-20" />
       ) : (
-        <span className="text-body-sm font-mono text-white">
+        <span className="text-xs font-bold text-[var(--text-primary)]">
           {formattedUsdcBalance}
         </span>
       )}

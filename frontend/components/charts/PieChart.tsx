@@ -39,9 +39,9 @@ const CustomTooltip = ({
   const formattedValue = formatValue ? formatValue(value) : `${value.toFixed(1)}%`;
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs text-gray-400">{name}</p>
-      <p className="text-sm font-mono text-white">{formattedValue}</p>
+    <div className="bg-[var(--border-color)] text-[var(--bg-primary)] border-2 border-[var(--border-color)] px-3 py-2 text-xs">
+      <p className="font-bold">{name}</p>
+      <p className="font-bold">{formattedValue}</p>
     </div>
   );
 };
@@ -53,6 +53,13 @@ export function PieChart({
   outerRadius = 80,
   formatValue,
 }: PieChartProps) {
+  // Override colors to retro palette
+  const retroColors = [
+    'var(--accent)',      // Red
+    'var(--text-primary)', // Black
+    'var(--text-muted)',   // Gray
+  ];
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       <RechartsPieChart>
@@ -64,9 +71,11 @@ export function PieChart({
           outerRadius={outerRadius}
           paddingAngle={2}
           dataKey="value"
+          stroke="var(--bg-primary)"
+          strokeWidth={2}
         >
           {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color} />
+            <Cell key={`cell-${index}`} fill={retroColors[index % retroColors.length]} />
           ))}
         </Pie>
         <Tooltip
@@ -90,16 +99,22 @@ interface PieChartLegendProps {
 }
 
 export function PieChartLegend({ data, formatValue }: PieChartLegendProps) {
+  const retroColors = [
+    'var(--accent)',
+    'var(--text-primary)',
+    'var(--text-muted)',
+  ];
+
   return (
     <div className="space-y-2">
       {data.map((item, index) => (
         <div key={index} className="flex items-center gap-3">
           <div
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: item.color }}
+            className="w-4 h-4 border-2 border-[var(--border-color)]"
+            style={{ backgroundColor: retroColors[index % retroColors.length] }}
           />
-          <span className="text-xs text-gray-400 flex-1">{item.name}</span>
-          <span className="text-xs font-mono text-white">
+          <span className="text-xs text-[var(--text-muted)] flex-1 uppercase tracking-wider">{item.name}</span>
+          <span className="text-xs font-bold text-[var(--text-primary)]">
             {formatValue ? formatValue(item.value) : `${item.value.toFixed(1)}%`}
           </span>
         </div>

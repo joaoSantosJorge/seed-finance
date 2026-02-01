@@ -20,14 +20,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-body-sm text-cool-gray mb-2"
+            className="block text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2"
           >
             {label}
           </label>
         )}
         <div className="relative">
           {leftElement && (
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-silver">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
               {leftElement}
             </div>
           )}
@@ -35,10 +35,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full bg-slate-800 border border-slate-600 rounded-button px-4 py-3 text-white font-mono',
-              'placeholder:text-silver focus:outline-none focus:border-primary',
-              'transition-colors duration-150',
-              error && 'border-error focus:border-error',
+              'w-full bg-[var(--bg-card)] border-2 border-[var(--border-color)] px-4 py-3',
+              'text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
+              'focus:outline-none focus:border-[var(--accent)] focus:shadow-[3px_3px_0_var(--border-color)]',
+              'transition-all duration-150',
+              error && 'border-[var(--accent)]',
               leftElement && 'pl-12',
               rightElement && 'pr-16',
               className
@@ -46,16 +47,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {rightElement && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-cool-gray text-body-sm font-medium">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] text-sm font-bold">
               {rightElement}
             </div>
           )}
         </div>
         {error && (
-          <p className="mt-2 text-body-sm text-error">{error}</p>
+          <p className="mt-2 text-xs text-[var(--accent)] font-bold">* {error}</p>
         )}
         {hint && !error && (
-          <p className="mt-2 text-body-sm text-silver">{hint}</p>
+          <p className="mt-2 text-xs text-[var(--text-muted)]">{hint}</p>
         )}
       </div>
     );

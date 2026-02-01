@@ -12,18 +12,18 @@ const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, hoverable = false, padding = 'lg', children, ...props }, ref) => {
     const paddingStyles = {
       none: '',
-      sm: 'p-sm',
-      md: 'p-md',
-      lg: 'p-lg',
+      sm: 'p-3',
+      md: 'p-4',
+      lg: 'p-6',
     };
 
     return (
       <div
         ref={ref}
         className={cn(
-          'bg-slate-800 border border-slate-700 rounded-card shadow-card',
+          'bg-[var(--bg-card)] border-2 border-[var(--border-color)]',
           paddingStyles[padding],
-          hoverable && 'card-hover cursor-pointer',
+          hoverable && 'cursor-pointer transition-all hover:shadow-[4px_4px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5',
           className
         )}
         {...props}
@@ -41,7 +41,7 @@ const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('flex items-center justify-between mb-4', className)}
+      className={cn('flex items-center justify-between mb-4 pb-3 border-b-2 border-[var(--border-color)]', className)}
       {...props}
     />
   )
@@ -52,7 +52,7 @@ const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingEleme
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}
-      className={cn('text-h2 text-white', className)}
+      className={cn('text-lg font-bold uppercase tracking-wider text-[var(--text-primary)]', className)}
       {...props}
     />
   )
@@ -63,7 +63,7 @@ const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLPara
   ({ className, ...props }, ref) => (
     <p
       ref={ref}
-      className={cn('text-body-sm text-cool-gray', className)}
+      className={cn('text-sm text-[var(--text-muted)]', className)}
       {...props}
     />
   )
@@ -81,7 +81,7 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn('flex items-center gap-4 mt-4 pt-4 border-t border-slate-700', className)}
+      className={cn('flex items-center gap-4 mt-4 pt-4 border-t-2 border-[var(--border-color)]', className)}
       {...props}
     />
   )

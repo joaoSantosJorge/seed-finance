@@ -11,21 +11,13 @@ interface SkeletonProps {
 
 export function Skeleton({
   className,
-  variant = 'rectangular',
   width,
   height,
 }: SkeletonProps) {
-  const variants = {
-    text: 'rounded',
-    circular: 'rounded-full',
-    rectangular: 'rounded-lg',
-  };
-
   return (
     <div
       className={cn(
-        'skeleton animate-pulse-slow',
-        variants[variant],
+        'skeleton bg-[var(--bg-secondary)]',
         className
       )}
       style={{
@@ -57,7 +49,7 @@ export function CardSkeleton() {
 
 export function TableRowSkeleton({ columns = 5 }: { columns?: number }) {
   return (
-    <div className="flex items-center gap-4 py-4 border-b border-slate-700">
+    <div className="flex items-center gap-4 py-4 border-b-2 border-[var(--border-color)]">
       {Array.from({ length: columns }).map((_, i) => (
         <Skeleton key={i} className="h-4 flex-1" />
       ))}

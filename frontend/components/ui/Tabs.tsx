@@ -49,7 +49,7 @@ export function TabsList({ children, className }: TabsListProps) {
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 p-1 bg-slate-800 rounded-lg',
+        'inline-flex items-center border-2 border-[var(--border-color)]',
         className
       )}
       role="tablist"
@@ -75,14 +75,14 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
       aria-selected={isActive}
       onClick={() => setActiveTab(value)}
       className={cn(
-        'px-4 py-2 text-body-sm font-medium rounded-md transition-colors',
+        'px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all border-r-2 border-[var(--border-color)] last:border-r-0',
         isActive
-          ? 'bg-slate-700 text-white'
-          : 'text-cool-gray hover:text-white',
+          ? 'bg-[var(--border-color)] text-[var(--bg-primary)]'
+          : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]',
         className
       )}
     >
-      {children}
+      {isActive ? `[ ${children} ]` : children}
     </button>
   );
 }

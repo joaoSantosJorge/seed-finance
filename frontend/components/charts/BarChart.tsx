@@ -42,9 +42,9 @@ const CustomTooltip = ({
   const formattedValue = formatValue ? formatValue(value) : value.toFixed(2);
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs text-gray-400">{name}</p>
-      <p className="text-sm font-mono text-white">{formattedValue}</p>
+    <div className="bg-[var(--border-color)] text-[var(--bg-primary)] border-2 border-[var(--border-color)] px-3 py-2 text-xs">
+      <p className="font-bold">{name}</p>
+      <p className="font-bold">{formattedValue}</p>
     </div>
   );
 };
@@ -52,10 +52,18 @@ const CustomTooltip = ({
 export function BarChart({
   data,
   height = 200,
-  color = '#3B82F6',
+  color = 'var(--text-primary)',
   formatValue,
   layout = 'horizontal',
 }: BarChartProps) {
+  // Retro colors - grayscale with accent
+  const retroColors = [
+    'var(--accent)',      // Red accent for first/main
+    'var(--text-primary)', // Black
+    'var(--text-muted)',   // Gray
+    'var(--text-secondary)', // Lighter gray
+  ];
+
   if (layout === 'vertical') {
     return (
       <ResponsiveContainer width="100%" height={height}>
@@ -66,26 +74,28 @@ export function BarChart({
         >
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="#334155"
-            strokeOpacity={0.5}
+            stroke="var(--text-muted)"
+            strokeOpacity={0.3}
             horizontal={false}
           />
           <XAxis
             type="number"
-            stroke="#64748B"
-            fontSize={12}
+            stroke="var(--text-muted)"
+            fontSize={10}
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: 'var(--border-color)', strokeWidth: 2 }}
             tickFormatter={formatValue}
+            fontFamily="Courier Prime"
           />
           <YAxis
             type="category"
             dataKey="name"
-            stroke="#64748B"
-            fontSize={12}
+            stroke="var(--text-muted)"
+            fontSize={10}
             tickLine={false}
-            axisLine={false}
+            axisLine={{ stroke: 'var(--border-color)', strokeWidth: 2 }}
             width={100}
+            fontFamily="Courier Prime"
           />
           <Tooltip
             content={({ active, payload }) => (
@@ -96,9 +106,9 @@ export function BarChart({
               />
             )}
           />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+          <Bar dataKey="value" radius={[0, 0, 0, 0]}>
             {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color || color} />
+              <Cell key={`cell-${index}`} fill={entry.color || retroColors[index % retroColors.length]} />
             ))}
           </Bar>
         </RechartsBarChart>
@@ -114,23 +124,25 @@ export function BarChart({
       >
         <CartesianGrid
           strokeDasharray="3 3"
-          stroke="#334155"
-          strokeOpacity={0.5}
+          stroke="var(--text-muted)"
+          strokeOpacity={0.3}
           vertical={false}
         />
         <XAxis
           dataKey="name"
-          stroke="#64748B"
-          fontSize={12}
+          stroke="var(--text-muted)"
+          fontSize={10}
           tickLine={false}
-          axisLine={false}
+          axisLine={{ stroke: 'var(--border-color)', strokeWidth: 2 }}
+          fontFamily="Courier Prime"
         />
         <YAxis
-          stroke="#64748B"
-          fontSize={12}
+          stroke="var(--text-muted)"
+          fontSize={10}
           tickLine={false}
-          axisLine={false}
+          axisLine={{ stroke: 'var(--border-color)', strokeWidth: 2 }}
           tickFormatter={formatValue}
+          fontFamily="Courier Prime"
         />
         <Tooltip
           content={({ active, payload }) => (
@@ -141,9 +153,9 @@ export function BarChart({
             />
           )}
         />
-        <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]}>
+        <Bar dataKey="value" fill={color} radius={[0, 0, 0, 0]}>
           {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={entry.color || color} />
+            <Cell key={`cell-${index}`} fill={entry.color || retroColors[index % retroColors.length]} />
           ))}
         </Bar>
       </RechartsBarChart>

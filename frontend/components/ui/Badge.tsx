@@ -11,29 +11,39 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, variant = 'default', size = 'md', ...props }, ref) => {
     const variants = {
-      default: 'bg-slate-700 text-silver',
-      success: 'bg-success/10 text-success border border-success/20',
-      warning: 'bg-warning/10 text-warning border border-warning/20',
-      error: 'bg-error/10 text-error border border-error/20',
-      info: 'bg-primary/10 text-primary border border-primary/20',
+      default: 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)]',
+      success: 'bg-transparent text-[var(--text-primary)] border-[var(--border-color)]',
+      warning: 'bg-transparent text-[var(--accent)] border-[var(--accent)]',
+      error: 'bg-[var(--accent)] text-white border-[var(--accent)]',
+      info: 'bg-transparent text-[var(--text-primary)] border-[var(--border-color)]',
+    };
+
+    const prefixes = {
+      default: '',
+      success: '[+] ',
+      warning: '[!] ',
+      error: '[X] ',
+      info: '[i] ',
     };
 
     const sizes = {
-      sm: 'text-caption px-2 py-0.5',
-      md: 'text-body-sm px-2.5 py-1',
+      sm: 'text-[10px] px-2 py-0.5',
+      md: 'text-xs px-3 py-1',
     };
 
     return (
       <span
         ref={ref}
         className={cn(
-          'inline-flex items-center font-medium rounded-full',
+          'inline-flex items-center font-bold uppercase tracking-wider border-2',
           variants[variant],
           sizes[size],
           className
         )}
         {...props}
-      />
+      >
+        {prefixes[variant]}{props.children}
+      </span>
     );
   }
 );

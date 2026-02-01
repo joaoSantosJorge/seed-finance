@@ -1,7 +1,6 @@
 'use client';
 
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
-import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -28,23 +27,38 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const baseStyles =
-      'inline-flex items-center justify-center font-semibold rounded-button transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-deep-navy disabled:cursor-not-allowed';
+      'inline-flex items-center justify-center font-bold uppercase tracking-wider border-2 transition-all duration-150 focus:outline-none disabled:cursor-not-allowed';
 
     const variants = {
-      primary:
-        'bg-primary text-white hover:bg-blue-500 active:bg-blue-700 disabled:bg-gray-600 disabled:opacity-50 focus:ring-primary',
-      secondary:
-        'bg-transparent border border-slate-600 text-white hover:bg-slate-700 disabled:opacity-50 focus:ring-slate-500',
-      ghost:
-        'bg-transparent text-cool-gray hover:text-white disabled:opacity-50 focus:ring-slate-500',
-      danger:
-        'bg-error text-white hover:bg-rose-600 active:bg-rose-700 disabled:opacity-50 focus:ring-error',
+      primary: cn(
+        'bg-[var(--border-color)] text-[var(--bg-primary)] border-[var(--border-color)]',
+        'hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:shadow-[3px_3px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5',
+        'active:shadow-none active:translate-x-0 active:translate-y-0',
+        'disabled:bg-[var(--text-muted)] disabled:border-[var(--text-muted)] disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0'
+      ),
+      secondary: cn(
+        'bg-transparent text-[var(--text-primary)] border-[var(--border-color)]',
+        'hover:bg-[var(--bg-secondary)] hover:shadow-[3px_3px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5',
+        'active:shadow-none active:translate-x-0 active:translate-y-0',
+        'disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0'
+      ),
+      ghost: cn(
+        'bg-transparent text-[var(--text-muted)] border-transparent',
+        'hover:text-[var(--accent)]',
+        'disabled:opacity-50'
+      ),
+      danger: cn(
+        'bg-[var(--accent)] text-white border-[var(--accent)]',
+        'hover:bg-[var(--accent-hover)] hover:shadow-[3px_3px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5',
+        'active:shadow-none active:translate-x-0 active:translate-y-0',
+        'disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0'
+      ),
     };
 
     const sizes = {
-      sm: 'text-body-sm px-3 py-2 gap-1.5',
-      md: 'text-body px-6 py-3 gap-2',
-      lg: 'text-body px-8 py-4 gap-2',
+      sm: 'text-xs px-3 py-1.5 gap-1.5',
+      md: 'text-sm px-6 py-2.5 gap-2',
+      lg: 'text-sm px-8 py-3.5 gap-2',
     };
 
     return (
@@ -55,7 +69,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="animate-pulse">...</span>
         ) : (
           leftIcon
         )}

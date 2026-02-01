@@ -45,9 +45,9 @@ const CustomTooltip = ({
   const formattedLabel = formatLabel && label !== undefined ? formatLabel(label) : String(label);
 
   return (
-    <div className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 shadow-lg">
-      <p className="text-xs text-gray-400">{formattedLabel}</p>
-      <p className="text-sm font-mono text-white">{formattedValue}</p>
+    <div className="bg-[var(--border-color)] text-[var(--bg-primary)] border-2 border-[var(--border-color)] px-3 py-2 text-xs">
+      <p className="font-bold">{formattedLabel}</p>
+      <p className="font-bold">{formattedValue}</p>
     </div>
   );
 };
@@ -56,7 +56,7 @@ export function LineChart({
   data,
   dataKey = 'value',
   xAxisKey = 'timestamp',
-  color = '#3B82F6',
+  color = 'var(--accent)',
   height = 200,
   showGrid = true,
   showAxis = true,
@@ -69,8 +69,8 @@ export function LineChart({
         {showGrid && (
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="#334155"
-            strokeOpacity={0.5}
+            stroke="var(--text-muted)"
+            strokeOpacity={0.3}
             vertical={false}
           />
         )}
@@ -78,19 +78,21 @@ export function LineChart({
           <>
             <XAxis
               dataKey={xAxisKey}
-              stroke="#64748B"
-              fontSize={12}
+              stroke="var(--text-muted)"
+              fontSize={10}
               tickLine={false}
-              axisLine={false}
+              axisLine={{ stroke: 'var(--border-color)', strokeWidth: 2 }}
               tickFormatter={formatLabel}
+              fontFamily="Courier Prime"
             />
             <YAxis
-              stroke="#64748B"
-              fontSize={12}
+              stroke="var(--text-muted)"
+              fontSize={10}
               tickLine={false}
-              axisLine={false}
+              axisLine={{ stroke: 'var(--border-color)', strokeWidth: 2 }}
               tickFormatter={formatValue}
               width={60}
+              fontFamily="Courier Prime"
             />
           </>
         )}
@@ -111,7 +113,7 @@ export function LineChart({
           stroke={color}
           strokeWidth={2}
           dot={false}
-          activeDot={{ r: 4, fill: color }}
+          activeDot={{ r: 4, fill: color, stroke: 'var(--bg-primary)', strokeWidth: 2 }}
         />
       </RechartsLineChart>
     </ResponsiveContainer>

@@ -11,14 +11,14 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, title }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-deep-navy">
+    <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Sidebar - Desktop only */}
       <div className="hidden lg:block">
         <Sidebar />
       </div>
 
       {/* Main Content */}
-      <div className="lg:ml-60">
+      <div className="lg:ml-64">
         <Header title={title} />
         <main className="p-6 max-w-7xl mx-auto">
           {children}
@@ -26,7 +26,7 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 z-40">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t-2 border-[var(--border-color)] z-40">
         <MobileNav />
       </div>
     </div>
@@ -36,24 +36,17 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
 // Mobile Bottom Navigation
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  ArrowDownToLine,
-  ArrowUpFromLine,
-  BarChart3,
-  History,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function MobileNav() {
   const pathname = usePathname();
 
   const items = [
-    { href: '/dashboard/financier', icon: LayoutDashboard, label: 'Home' },
-    { href: '/dashboard/financier/deposit', icon: ArrowDownToLine, label: 'Deposit' },
-    { href: '/dashboard/financier/withdraw', icon: ArrowUpFromLine, label: 'Withdraw' },
-    { href: '/dashboard/financier/analytics', icon: BarChart3, label: 'Analytics' },
-    { href: '/dashboard/financier/transactions', icon: History, label: 'History' },
+    { href: '/dashboard/financier', label: 'HOME' },
+    { href: '/dashboard/financier/deposit', label: 'IN' },
+    { href: '/dashboard/financier/withdraw', label: 'OUT' },
+    { href: '/dashboard/financier/analytics', label: 'DATA' },
+    { href: '/dashboard/financier/transactions', label: 'LOG' },
   ];
 
   const isActive = (href: string) => {
@@ -64,18 +57,19 @@ function MobileNav() {
   };
 
   return (
-    <nav className="flex items-center justify-around py-2">
+    <nav className="flex items-center justify-around py-3">
       {items.map((item) => (
         <Link
           key={item.href}
           href={item.href}
           className={cn(
-            'flex flex-col items-center gap-1 px-3 py-2',
-            isActive(item.href) ? 'text-primary' : 'text-cool-gray'
+            'px-3 py-1 font-bold text-xs tracking-wider transition-colors',
+            isActive(item.href)
+              ? 'bg-[var(--border-color)] text-[var(--bg-primary)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--accent)]'
           )}
         >
-          <item.icon className="w-5 h-5" />
-          <span className="text-caption">{item.label}</span>
+          [{item.label}]
         </Link>
       ))}
     </nav>

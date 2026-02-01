@@ -6,3 +6,4 @@ export { Modal, ModalFooter } from './Modal';
 export { Skeleton, MetricSkeleton, CardSkeleton, TableRowSkeleton, ChartSkeleton } from './Skeleton';
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './Tabs';
 export { Tooltip, tooltipContent } from './Tooltip';
+export { ThemeToggle } from './ThemeToggle';
