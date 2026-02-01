@@ -13,8 +13,8 @@ const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
     const variants = {
       default: 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border-[var(--border-color)]',
       success: 'bg-transparent text-[var(--text-primary)] border-[var(--border-color)]',
-      warning: 'bg-transparent text-[var(--accent)] border-[var(--accent)]',
-      error: 'bg-[var(--accent)] text-white border-[var(--accent)]',
+      warning: 'bg-transparent text-[var(--text-muted)] border-[var(--text-muted)]',
+      error: 'bg-[var(--text-muted)] text-[var(--bg-primary)] border-[var(--text-muted)]',
       info: 'bg-transparent text-[var(--text-primary)] border-[var(--border-color)]',
     };
 

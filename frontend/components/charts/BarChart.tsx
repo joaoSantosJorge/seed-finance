@@ -56,12 +56,12 @@ export function BarChart({
   formatValue,
   layout = 'horizontal',
 }: BarChartProps) {
-  // Retro colors - grayscale with accent
+  // Retro colors - grayscale only
   const retroColors = [
-    'var(--accent)',      // Red accent for first/main
-    'var(--text-primary)', // Black
-    'var(--text-muted)',   // Gray
-    'var(--text-secondary)', // Lighter gray
+    'var(--text-primary)',   // Main
+    'var(--text-secondary)', // Secondary
+    'var(--text-muted)',     // Muted
+    'var(--border-color)',   // Border
   ];
 
   if (layout === 'vertical') {

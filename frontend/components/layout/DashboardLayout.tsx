@@ -66,7 +66,7 @@ function MobileNav() {
             'px-3 py-1 font-bold text-xs tracking-wider transition-colors',
             isActive(item.href)
               ? 'bg-[var(--border-color)] text-[var(--bg-primary)]'
-              : 'text-[var(--text-muted)] hover:text-[var(--accent)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
           )}
         >
           [{item.label}]

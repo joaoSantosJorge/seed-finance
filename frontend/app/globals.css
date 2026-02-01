@@ -5,15 +5,10 @@
 
 /* Custom theme values */
 @theme {
-  /* Retro color palette - Black, White, Red */
-  --color-ink: #1a1a1a;
-  --color-paper: #f5f5f0;
-  --color-paper-dark: #e8e8e0;
-  --color-accent: #c41e3a;
-  --color-accent-light: #ff6b6b;
-  --color-muted: #6b6b6b;
-  --color-border: #2a2a2a;
-  --color-border-light: #d0d0c8;
+  /* Retro color palette - Black & White only */
+  --color-ink: #0a0a0a;
+  --color-paper: #f0f0f0;
+  --color-muted: #666666;
 
   --font-family-typewriter: 'Courier Prime', 'Courier New', Courier, monospace;
 
@@ -23,29 +18,29 @@
 /* Base styles */
 @layer base {
   :root {
-    /* Light mode (default) */
-    --bg-primary: #f5f5f0;
-    --bg-secondary: #e8e8e0;
-    --bg-card: #ffffff;
-    --text-primary: #1a1a1a;
-    --text-secondary: #4a4a4a;
-    --text-muted: #6b6b6b;
-    --border-color: #2a2a2a;
-    --accent: #c41e3a;
-    --accent-hover: #a01830;
+    /* Dark mode (default) */
+    --bg-primary: #0a0a0a;
+    --bg-secondary: #151515;
+    --bg-card: #0f0f0f;
+    --text-primary: #f0f0f0;
+    --text-secondary: #b0b0b0;
+    --text-muted: #707070;
+    --border-color: #e0e0e0;
+    --accent: #ffffff;
+    --accent-hover: #cccccc;
   }
 
-  .dark {
-    /* Dark mode */
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #1a1a1a;
-    --bg-card: #141414;
-    --text-primary: #f5f5f0;
-    --text-secondary: #c0c0b8;
-    --text-muted: #808080;
-    --border-color: #f5f5f0;
-    --accent: #ff6b6b;
-    --accent-hover: #ff8585;
+  .light {
+    /* Light mode */
+    --bg-primary: #f0f0f0;
+    --bg-secondary: #e0e0e0;
+    --bg-card: #ffffff;
+    --text-primary: #0a0a0a;
+    --text-secondary: #333333;
+    --text-muted: #666666;
+    --border-color: #0a0a0a;
+    --accent: #000000;
+    --accent-hover: #333333;
   }
 
   html {
@@ -83,8 +78,8 @@
 
   /* Selection */
   ::selection {
-    background: var(--accent);
-    color: white;
+    background: var(--text-primary);
+    color: var(--bg-primary);
   }
 }
 
@@ -101,7 +96,6 @@
   }
 
   .card-hover:hover {
-    border-color: var(--accent);
     box-shadow: 4px 4px 0 var(--border-color);
   }
 
@@ -127,19 +121,17 @@
   }
 
   .metric-change-positive::before {
-    content: '▲ ';
-    color: var(--accent);
+    content: '[+] ';
   }
 
   .metric-change-negative {
     font-size: 12px;
-    color: var(--text-primary);
+    color: var(--text-muted);
     font-weight: 700;
   }
 
   .metric-change-negative::before {
-    content: '▼ ';
-    color: var(--accent);
+    content: '[-] ';
   }
 
   .btn-primary {
@@ -155,8 +147,6 @@
   }
 
   .btn-primary:hover {
-    background-color: var(--accent);
-    border-color: var(--accent);
     box-shadow: 3px 3px 0 var(--border-color);
     transform: translate(-2px, -2px);
   }
@@ -205,7 +195,7 @@
   }
 
   .btn-ghost:hover {
-    color: var(--accent);
+    color: var(--text-primary);
   }
 
   .input-field {
@@ -223,12 +213,11 @@
 
   .input-field:focus {
     outline: none;
-    border-color: var(--accent);
     box-shadow: 3px 3px 0 var(--border-color);
   }
 
   .input-error {
-    border-color: var(--accent);
+    border-color: var(--text-muted);
   }
 
   /* Retro divider */

@@ -34,7 +34,7 @@ function NotificationItem({ notification }: { notification: Notification }) {
       <div className="flex items-start gap-3">
         <span className={cn(
           'text-xs font-bold',
-          notification.read ? 'text-[var(--text-muted)]' : 'text-[var(--accent)]'
+          notification.read ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'
         )}>
           {notificationTypePrefixes[notification.type]}
         </span>
@@ -80,7 +80,7 @@ export function NotificationBell() {
       >
         <span className="text-[var(--text-primary)]">ALERTS</span>
         {unreadCount > 0 && (
-          <span className="ml-2 text-[var(--accent)]">
+          <span className="ml-2 text-[var(--text-primary)]">
             [{unreadCount > 9 ? '9+' : unreadCount}]
           </span>
         )}
@@ -94,7 +94,7 @@ export function NotificationBell() {
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
-                className="text-xs font-bold text-[var(--accent)] hover:underline"
+                className="text-xs font-bold text-[var(--text-primary)] hover:underline"
               >
                 [CLEAR]
               </button>
@@ -122,7 +122,7 @@ export function NotificationBell() {
                   setIsOpen(false);
                   window.location.href = '/dashboard/financier/notifications';
                 }}
-                className="text-xs font-bold text-[var(--accent)] hover:underline"
+                className="text-xs font-bold text-[var(--text-primary)] hover:underline"
               >
                 [VIEW ALL]
               </button>

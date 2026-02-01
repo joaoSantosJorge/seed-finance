@@ -53,11 +53,11 @@ export function PieChart({
   outerRadius = 80,
   formatValue,
 }: PieChartProps) {
-  // Override colors to retro palette
+  // Override colors to retro palette - grayscale only
   const retroColors = [
-    'var(--accent)',      // Red
-    'var(--text-primary)', // Black
-    'var(--text-muted)',   // Gray
+    'var(--text-primary)',   // Main
+    'var(--text-secondary)', // Secondary
+    'var(--text-muted)',     // Muted
   ];
 
   return (
@@ -100,8 +100,8 @@ interface PieChartLegendProps {
 
 export function PieChartLegend({ data, formatValue }: PieChartLegendProps) {
   const retroColors = [
-    'var(--accent)',
     'var(--text-primary)',
+    'var(--text-secondary)',
     'var(--text-muted)',
   ];
 

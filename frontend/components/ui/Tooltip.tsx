@@ -34,7 +34,7 @@ export function Tooltip({
       onMouseLeave={() => setIsVisible(false)}
     >
       {children || (
-        <span className="text-[var(--text-muted)] hover:text-[var(--accent)] cursor-help font-bold">[?]</span>
+        <span className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-help font-bold">[?]</span>
       )}
 
       {isVisible && (

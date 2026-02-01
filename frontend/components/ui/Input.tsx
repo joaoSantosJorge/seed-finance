@@ -37,9 +37,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             className={cn(
               'w-full bg-[var(--bg-card)] border-2 border-[var(--border-color)] px-4 py-3',
               'text-[var(--text-primary)] placeholder:text-[var(--text-muted)]',
-              'focus:outline-none focus:border-[var(--accent)] focus:shadow-[3px_3px_0_var(--border-color)]',
+              'focus:outline-none focus:shadow-[3px_3px_0_var(--text-muted)]',
               'transition-all duration-150',
-              error && 'border-[var(--accent)]',
+              error && 'border-[var(--text-muted)]',
               leftElement && 'pl-12',
               rightElement && 'pr-16',
               className
@@ -53,7 +53,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="mt-2 text-xs text-[var(--accent)] font-bold">* {error}</p>
+          <p className="mt-2 text-xs text-[var(--text-muted)] font-bold">[!] {error}</p>
         )}
         {hint && !error && (
           <p className="mt-2 text-xs text-[var(--text-muted)]">{hint}</p>

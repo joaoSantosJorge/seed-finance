@@ -32,24 +32,24 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       primary: cn(
         'bg-[var(--border-color)] text-[var(--bg-primary)] border-[var(--border-color)]',
-        'hover:bg-[var(--accent)] hover:border-[var(--accent)] hover:shadow-[3px_3px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5',
+        'hover:shadow-[3px_3px_0_var(--text-muted)] hover:-translate-x-0.5 hover:-translate-y-0.5',
         'active:shadow-none active:translate-x-0 active:translate-y-0',
         'disabled:bg-[var(--text-muted)] disabled:border-[var(--text-muted)] disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0'
       ),
       secondary: cn(
         'bg-transparent text-[var(--text-primary)] border-[var(--border-color)]',
-        'hover:bg-[var(--bg-secondary)] hover:shadow-[3px_3px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5',
+        'hover:bg-[var(--bg-secondary)] hover:shadow-[3px_3px_0_var(--text-muted)] hover:-translate-x-0.5 hover:-translate-y-0.5',
         'active:shadow-none active:translate-x-0 active:translate-y-0',
         'disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0'
       ),
       ghost: cn(
         'bg-transparent text-[var(--text-muted)] border-transparent',
-        'hover:text-[var(--accent)]',
+        'hover:text-[var(--text-primary)]',
         'disabled:opacity-50'
       ),
       danger: cn(
-        'bg-[var(--accent)] text-white border-[var(--accent)]',
-        'hover:bg-[var(--accent-hover)] hover:shadow-[3px_3px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5',
+        'bg-[var(--text-muted)] text-[var(--bg-primary)] border-[var(--text-muted)]',
+        'hover:bg-[var(--text-secondary)] hover:border-[var(--text-secondary)] hover:shadow-[3px_3px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5',
         'active:shadow-none active:translate-x-0 active:translate-y-0',
         'disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0'
       ),

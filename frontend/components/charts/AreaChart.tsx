@@ -57,7 +57,7 @@ export function AreaChart({
   data,
   dataKey = 'value',
   xAxisKey = 'timestamp',
-  color = 'var(--accent)',
+  color = 'var(--text-primary)',
   gradientId = 'colorValue',
   height = 200,
   showGrid = true,

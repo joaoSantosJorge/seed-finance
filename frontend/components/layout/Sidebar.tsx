@@ -95,7 +95,7 @@ export function Sidebar() {
                 'flex items-center justify-between px-3 py-2 transition-colors font-bold text-sm tracking-wider',
                 isActive(item.href)
                   ? 'bg-[var(--border-color)] text-[var(--bg-primary)]'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--accent)] hover:bg-[var(--bg-secondary)]'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]'
               )}
             >
               <span>{isActive(item.href) ? `> ${item.label}` : `  ${item.label}`}</span>
@@ -117,7 +117,7 @@ export function Sidebar() {
               href={item.href}
               target={item.href.startsWith('http') ? '_blank' : undefined}
               rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className="flex items-center justify-between px-3 py-2 text-[var(--text-muted)] hover:text-[var(--accent)] hover:bg-[var(--bg-secondary)] transition-colors font-bold text-sm tracking-wider"
+              className="flex items-center justify-between px-3 py-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors font-bold text-sm tracking-wider"
             >
               <span>  {item.label}</span>
               <span className="text-xs">[{item.shortcut}]</span>

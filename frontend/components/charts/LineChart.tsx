@@ -56,7 +56,7 @@ export function LineChart({
   data,
   dataKey = 'value',
   xAxisKey = 'timestamp',
-  color = 'var(--accent)',
+  color = 'var(--text-primary)',
   height = 200,
   showGrid = true,
   showAxis = true,
