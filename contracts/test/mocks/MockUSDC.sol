@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
  * @dev 6 decimals like real USDC
  */
 contract MockUSDC is ERC20 {
-    constructor() ERC20("USD Coin", "USDC") {}
+    constructor() ERC20("Mock USD Coin", "mUSDC") {}
 
     function decimals() public view override returns (uint8) {
         return 6;
