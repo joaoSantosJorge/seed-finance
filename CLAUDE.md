@@ -1011,6 +1011,7 @@ export class CircleService {
 - [ ] LP deposit/withdraw flow
 - [ ] Circle Wallet integration
 - [ ] Frontend dashboards
+- [x] Centralized environment config (local/testnet/production) - see `docs/development/05_centralized_env_config.md`
 
 ### Phase 2: Production Polish (2-3 weeks)
 - [ ] Circle Gateway integration (fiat on/off-ramp)
