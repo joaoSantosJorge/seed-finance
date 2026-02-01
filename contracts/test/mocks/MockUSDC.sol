@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract MockUSDC is ERC20 {
     constructor() ERC20("USD Coin", "USDC") {}
 
-    function decimals() public pure override returns (uint8) {
+    function decimals() public view override returns (uint8) {
         return 6;
     }
 
