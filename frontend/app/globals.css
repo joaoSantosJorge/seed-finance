@@ -1,0 +1,124 @@
+/* Custom font imports - must come before @import 'tailwindcss' */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import 'tailwindcss';
+
+/* Custom theme values */
+@theme {
+  --color-deep-navy: #0F172A;
+  --color-slate-bg: #1E293B;
+  --color-steel-gray: #334155;
+  --color-cool-gray: #64748B;
+  --color-silver: #94A3B8;
+  --color-success: #10B981;
+  --color-success-light: #D1FAE5;
+  --color-error: #F43F5E;
+  --color-error-light: #FFE4E6;
+  --color-primary: #3B82F6;
+  --color-primary-light: #DBEAFE;
+  --color-warning: #F59E0B;
+  --color-seed-green: #22C55E;
+
+  --font-family-sans: 'Inter', system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', Menlo, Monaco, monospace;
+
+  --animate-pulse-slow: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Base styles */
+@layer base {
+  :root {
+    --background: #0F172A;
+    --foreground: #F8FAFC;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #1E293B;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}
+
+/* Component utilities */
+@layer components {
+  .card {
+    @apply bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-sm;
+  }
+
+  .card-hover {
+    @apply transition-all duration-150 hover:border-primary hover:shadow-md;
+  }
+
+  .metric-value {
+    @apply text-[28px] font-semibold text-white font-mono;
+  }
+
+  .metric-label {
+    @apply text-[11px] uppercase text-cool-gray tracking-wider font-medium;
+  }
+
+  .metric-change-positive {
+    @apply text-xs text-success;
+  }
+
+  .metric-change-negative {
+    @apply text-xs text-error;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white font-semibold py-3 px-6 rounded-lg
+           hover:bg-blue-500 active:bg-blue-700
+           disabled:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed
+           transition-colors duration-150;
+  }
+
+  .btn-secondary {
+    @apply bg-transparent border border-slate-600 text-white font-medium py-3 px-6 rounded-lg
+           hover:bg-slate-700 transition-colors duration-150;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-cool-gray font-medium py-2 px-4 rounded-lg
+           hover:text-white transition-colors duration-150;
+  }
+
+  .input-field {
+    @apply bg-slate-800 border border-slate-600 rounded-lg px-4 py-3 text-white
+           placeholder:text-silver focus:outline-none focus:border-primary
+           transition-colors duration-150;
+  }
+
+  .input-error {
+    @apply border-error focus:border-error;
+  }
+}
+
+/* Skeleton animation */
+@layer utilities {
+  .skeleton {
+    @apply bg-slate-700 animate-pulse-slow rounded;
+  }
+}

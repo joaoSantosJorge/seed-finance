@@ -1,8 +1,9 @@
 # 04_financier_lp_dashboard_ui — Implementation Plan
 
 > Feature: Financier (LP) Dashboard User Interface
-> Status: Planning
+> Status: Implemented
 > Created: 2026-02-01
+> Completed: 2026-02-01
 
 ---
 
@@ -20,6 +21,353 @@ Build the complete Liquidity Provider (Financier) dashboard for Seed Finance. LP
 - **Crypto wallet** — RainbowKit/WalletConnect integration only (no Circle Wallet)
 - **No KYC** — Skip accredited investor verification for testnet/MVP
 - **Full dashboard** — Include yield analytics, transaction history, notifications
+
+---
+
+## Design System: Institution-Grade UI
+
+> **Design Philosophy:** Clean, professional, and trustworthy. The interface should feel like a Bloomberg terminal meets modern fintech — data-dense but never cluttered, precise but approachable. Every pixel should convey competence and security.
+
+### Visual Identity
+
+#### Color Palette
+
+```
+PRIMARY PALETTE (Professional Finance)
+─────────────────────────────────────────────────────────────────────
+│ Deep Navy      │ #0F172A  │ Primary background, headers          │
+│ Slate          │ #1E293B  │ Card backgrounds, secondary surfaces │
+│ Steel Gray     │ #334155  │ Borders, dividers                    │
+│ Cool Gray      │ #64748B  │ Secondary text, labels               │
+│ Silver         │ #94A3B8  │ Tertiary text, placeholders          │
+│ White          │ #F8FAFC  │ Primary text, key numbers            │
+─────────────────────────────────────────────────────────────────────
+
+ACCENT COLORS (Semantic)
+─────────────────────────────────────────────────────────────────────
+│ Emerald        │ #10B981  │ Positive values, success, gains      │
+│ Emerald Light  │ #D1FAE5  │ Success backgrounds (10% opacity)    │
+│ Rose           │ #F43F5E  │ Negative values, errors, losses      │
+│ Rose Light     │ #FFE4E6  │ Error backgrounds (10% opacity)      │
+│ Blue           │ #3B82F6  │ Interactive elements, links          │
+│ Blue Light     │ #DBEAFE  │ Hover states, selections             │
+│ Amber          │ #F59E0B  │ Warnings, pending states             │
+─────────────────────────────────────────────────────────────────────
+
+BRAND COLOR
+─────────────────────────────────────────────────────────────────────
+│ Seed Green     │ #22C55E  │ Logo, brand accents (use sparingly)  │
+─────────────────────────────────────────────────────────────────────
+```
+
+#### Typography
+
+```
+FONT FAMILY: Inter (Google Fonts)
+─────────────────────────────────────────────────────────────────────
+Primary:     Inter (sans-serif) — All UI text
+Monospace:   JetBrains Mono — Numbers, addresses, code
+
+TYPE SCALE
+─────────────────────────────────────────────────────────────────────
+│ Display      │ 36px │ 700 │ -0.02em │ Page titles, hero numbers │
+│ Heading 1    │ 24px │ 600 │ -0.01em │ Section headers           │
+│ Heading 2    │ 18px │ 600 │ 0       │ Card titles               │
+│ Heading 3    │ 14px │ 600 │ 0.02em  │ Labels, uppercase headers │
+│ Body         │ 14px │ 400 │ 0       │ Default text              │
+│ Body Small   │ 12px │ 400 │ 0       │ Secondary info, captions  │
+│ Caption      │ 11px │ 500 │ 0.05em  │ Timestamps, metadata      │
+─────────────────────────────────────────────────────────────────────
+
+NUMBER FORMATTING
+─────────────────────────────────────────────────────────────────────
+• Currency:     Always show 2 decimals ($1,234.56)
+• Large values: Use abbreviations ($1.24M, $456K)
+• Percentages:  2 decimals for APY (7.42%), trends (±0.15%)
+• Addresses:    Truncate middle (0x1234...5678)
+• Shares:       Full precision for small, 2 decimals for display
+─────────────────────────────────────────────────────────────────────
+```
+
+#### Spacing & Layout
+
+```
+SPACING SCALE (4px base)
+─────────────────────────────────────────────────────────────────────
+│ xs   │ 4px   │ Inline spacing, icon gaps           │
+│ sm   │ 8px   │ Tight component padding             │
+│ md   │ 16px  │ Default padding, card spacing       │
+│ lg   │ 24px  │ Section spacing                     │
+│ xl   │ 32px  │ Major section dividers              │
+│ 2xl  │ 48px  │ Page section spacing                │
+─────────────────────────────────────────────────────────────────────
+
+LAYOUT GRID
+─────────────────────────────────────────────────────────────────────
+• Max content width: 1280px (centered)
+• Sidebar width: 240px (collapsible to 64px)
+• Card padding: 24px
+• Card border-radius: 12px
+• Card shadow: 0 1px 3px rgba(0,0,0,0.1)
+─────────────────────────────────────────────────────────────────────
+```
+
+### Component Design Principles
+
+#### Cards
+
+```
+CARD HIERARCHY
+─────────────────────────────────────────────────────────────────────
+┌─────────────────────────────────────────────────────────────────┐
+│  METRIC CARD (Primary)                                          │
+│                                                                 │
+│  Label                          ← 11px, uppercase, gray-400     │
+│  $125,420.50                    ← 28px, semibold, white         │
+│  +$892.30 (0.72%)               ← 12px, emerald (positive)      │
+│                                                                 │
+│  Background: slate-800                                          │
+│  Border: 1px slate-700                                          │
+│  Padding: 24px                                                  │
+│  Border-radius: 12px                                            │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  ACTION CARD (Interactive)                                      │
+│                                                                 │
+│  [Icon]  Title                                                  │
+│          Description text here                                  │
+│                                                                 │
+│  Hover: border-blue-500, bg-slate-750                          │
+│  Transition: 150ms ease                                         │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Buttons
+
+```
+BUTTON STYLES
+─────────────────────────────────────────────────────────────────────
+PRIMARY (Deposit, Confirm)
+├── Background: blue-600
+├── Text: white, 14px, semibold
+├── Padding: 12px 24px
+├── Border-radius: 8px
+├── Hover: blue-500
+├── Active: blue-700
+└── Disabled: gray-600, opacity 50%
+
+SECONDARY (Withdraw, Cancel)
+├── Background: transparent
+├── Border: 1px slate-600
+├── Text: white, 14px, medium
+├── Hover: bg-slate-700
+
+GHOST (Back, See All)
+├── Background: transparent
+├── Text: gray-400, 14px, medium
+├── Hover: text-white
+─────────────────────────────────────────────────────────────────────
+```
+
+#### Data Tables
+
+```
+TABLE DESIGN
+─────────────────────────────────────────────────────────────────────
+┌─────────────────────────────────────────────────────────────────┐
+│  HEADER ROW                                                     │
+│  ─────────────────────────────────────────────────────────────  │
+│  Type        Amount          Date          Status    Action    │
+│  ─────────────────────────────────────────────────────────────  │
+│  Deposit     $10,000.00     Feb 1, 2026    ✓ Done    [View]   │
+│  ─────────────────────────────────────────────────────────────  │
+│  Yield       +$156.20       Jan 31, 2026   ✓ Done    [View]   │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  Header: 11px, uppercase, gray-400, left-aligned               │
+│  Cells: 14px, white (numbers), gray-300 (text)                 │
+│  Row hover: bg-slate-700/50                                     │
+│  Alternating: none (cleaner)                                    │
+│  Borders: horizontal only, slate-700                            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Charts
+
+```
+CHART STYLING
+─────────────────────────────────────────────────────────────────────
+Background:     transparent
+Grid lines:     slate-700, dashed, 0.5px
+Axis labels:    12px, gray-400
+Tooltip:        slate-800 bg, white text, 12px
+Line stroke:    2px
+Area fill:      10% opacity of line color
+
+COLOR MAPPING:
+├── Primary metric:    blue-500
+├── Secondary:         emerald-500
+├── Tertiary:          amber-500
+├── Negative:          rose-500
+─────────────────────────────────────────────────────────────────────
+```
+
+### Interaction Patterns
+
+#### Loading States
+
+```
+SKELETON LOADING
+─────────────────────────────────────────────────────────────────────
+• Use animated pulse skeletons, not spinners
+• Match exact dimensions of content being loaded
+• Background: slate-700 → slate-600 (pulse animation)
+• Duration: 1.5s infinite
+
+Example:
+┌─────────────────────────────────────────────────────────────────┐
+│  POSITION                                                       │
+│  ████████████████                ← Skeleton for amount          │
+│  ██████████                      ← Skeleton for change          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Empty States
+
+```
+EMPTY STATE DESIGN
+─────────────────────────────────────────────────────────────────────
+┌─────────────────────────────────────────────────────────────────┐
+│                                                                 │
+│                      [Subtle Icon]                              │
+│                                                                 │
+│                  No transactions yet                            │
+│         Your deposit and withdrawal history will               │
+│                    appear here.                                 │
+│                                                                 │
+│                 [ Make First Deposit ]                          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+
+• Icon: 48px, gray-500, outlined style
+• Title: 16px, semibold, white
+• Description: 14px, gray-400, max 280px width
+• CTA button: primary style
+```
+
+#### Error States
+
+```
+ERROR HANDLING
+─────────────────────────────────────────────────────────────────────
+INLINE ERROR (Form validation)
+├── Border: rose-500
+├── Message: 12px, rose-400, below input
+├── Icon: exclamation circle, rose-500
+
+TOAST ERROR (Transaction failure)
+├── Background: rose-900/90
+├── Border-left: 4px rose-500
+├── Title: 14px, semibold, white
+├── Message: 12px, rose-200
+├── Duration: 5 seconds (errors persist longer)
+
+FULL PAGE ERROR (API failure)
+├── Centered content
+├── Retry button
+├── Help link
+─────────────────────────────────────────────────────────────────────
+```
+
+### Contextual Help
+
+```
+TOOLTIP SYSTEM
+─────────────────────────────────────────────────────────────────────
+• Trigger: hover on [?] icon or underlined term
+• Delay: 300ms before showing
+• Background: slate-700
+• Padding: 8px 12px
+• Max width: 280px
+• Arrow: pointing to trigger element
+
+Example tooltips:
+─────────────────────────────────────────────────────────────────────
+"Share Price"
+→ "The value of 1 sfUSDC in USDC. Increases as yield accrues
+   to the pool. Your position value = shares × share price."
+
+"Utilization Rate"
+→ "Percentage of pool capital currently deployed to finance
+   invoices. Higher utilization = more capital earning yield."
+
+"Available Liquidity"
+→ "USDC available for immediate withdrawal. Withdrawals
+   exceeding this may require treasury redemption."
+─────────────────────────────────────────────────────────────────────
+```
+
+### Information Architecture
+
+```
+CONTEXTUAL INFORMATION HIERARCHY
+─────────────────────────────────────────────────────────────────────
+
+1. PRIMARY DATA (Always visible)
+   • Position value
+   • Current APY
+   • Available balance
+
+2. SECONDARY DATA (Visible on dashboard)
+   • Pool utilization
+   • Share price
+   • Yield breakdown
+
+3. DETAILED DATA (On dedicated pages)
+   • Transaction history
+   • Historical charts
+   • Pool composition
+
+4. REFERENCE DATA (Tooltips & help)
+   • Term definitions
+   • Methodology explanations
+   • Risk disclosures
+─────────────────────────────────────────────────────────────────────
+```
+
+### Institutional Trust Signals
+
+```
+TRUST ELEMENTS TO INCLUDE
+─────────────────────────────────────────────────────────────────────
+• Contract addresses: Display with verification links to Basescan
+• Audit status: Show audit badge when completed
+• TVL milestone badges: "Securing $1M+" when applicable
+• Real-time status: Green dot for live data, timestamp for last update
+• Transaction confirmations: Block number + explorer link
+• Pool parameters: Transparent display of fees, limits, etc.
+─────────────────────────────────────────────────────────────────────
+```
+
+### Responsive Breakpoints
+
+```
+BREAKPOINT STRATEGY
+─────────────────────────────────────────────────────────────────────
+│ Mobile     │ < 640px   │ Single column, stacked cards        │
+│ Tablet     │ 640-1024  │ Two columns, collapsed sidebar      │
+│ Desktop    │ > 1024px  │ Full layout, expanded sidebar       │
+│ Wide       │ > 1440px  │ Max-width container, centered       │
+─────────────────────────────────────────────────────────────────────
+
+MOBILE ADAPTATIONS:
+• Sidebar → Bottom navigation bar
+• Multi-column grids → Single column stack
+• Large charts → Simplified sparklines
+• Data tables → Card-based list view
+• Tooltips → Tap to reveal (not hover)
+```
 
 ---
 

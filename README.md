@@ -150,10 +150,12 @@ See [Architecture Analysis](./docs/01_architecture_analysis.md) for the full dec
 ## Implemented Features
 
 - [x] Base-only architecture analysis
-- [ ] Smart contract implementation
+- [x] LiquidityPool and TreasuryManager smart contracts (Foundry)
+- [x] Financier (LP) Dashboard UI (Next.js 14 + RainbowKit)
 - [ ] Circle Wallet integration
 - [ ] Circle Gateway integration
-- [ ] Frontend dashboards
+- [ ] InvoiceRegistry, ExecutionPool, PaymentRouter contracts
+- [ ] Buyer/Supplier dashboards
 - [ ] End-to-end testing
 
 ---
