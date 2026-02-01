@@ -434,10 +434,8 @@ contract LiquidityPool is ERC4626, AccessControl, ReentrancyGuard, Pausable {
         uint256 available = availableLiquidity();
         if (available < amount) revert InsufficientLiquidity(amount, available);
 
-        // Transfer to treasury manager
-        IERC20(asset()).safeTransfer(treasuryManager, amount);
-
-        // Tell treasury manager to deposit
+        // TreasuryManager pulls funds via transferFrom (we approved it in setTreasuryManager)
+        // No need to transfer first - TM will pull when deposit() is called
         ITreasuryManager(treasuryManager).deposit(amount);
 
         totalInTreasury += amount;

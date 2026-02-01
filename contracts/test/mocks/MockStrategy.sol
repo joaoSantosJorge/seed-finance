@@ -67,7 +67,10 @@ contract MockStrategy is ITreasuryStrategy {
     }
 
     function totalValue() public view override returns (uint256) {
-        return _asset.balanceOf(address(this)) + simulatedYield;
+        // Just return the actual balance - simulatedYield is only used
+        // when we don't mint actual tokens (for pure simulation)
+        // If minting real tokens for yield, just use balance
+        return _asset.balanceOf(address(this));
     }
 
     function asset() external view override returns (address) {

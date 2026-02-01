@@ -2,7 +2,7 @@
 
 > **This document is the single source of truth for building Seed Finance.**
 > Claude: Always read this before implementing any feature.
-> before writing code, write the plan in a file and put it in /development. Then follow the steps on the file
+> before writing code, write the plan in a file and put it in /docs/development. Then follow the steps on the file
 > before commit and push, run tests
 
 ---
