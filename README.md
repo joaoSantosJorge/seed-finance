@@ -145,6 +145,13 @@ See [Architecture Analysis](./docs/01_architecture_analysis.md) for the full dec
 - [Base Reference](./docs/BASE-REFERENCE.md) — Network details
 - [Strategy Document](./strategic-documents/reverse-factoring-blockchain-strategy.md)
 
+### Development Guides
+
+- [Liquidity Pool & Treasury Manager](./docs/development/03_liquidity_pool_treasury_manager.md) — Smart contract design
+- [Financier Dashboard UI](./docs/development/04_financier_lp_dashboard_ui.md) — UI/UX specification
+- [Environment Configuration](./docs/development/05_centralized_env_config.md) — Local/testnet/production setup
+- [Manual Testing Guide](./docs/development/06_financier_dashboard_manual_testing.md) — LP Dashboard testing checklist
+
 ---
 
 ## Implemented Features
@@ -152,6 +159,8 @@ See [Architecture Analysis](./docs/01_architecture_analysis.md) for the full dec
 - [x] Base-only architecture analysis
 - [x] LiquidityPool and TreasuryManager smart contracts (Foundry)
 - [x] Financier (LP) Dashboard UI (Next.js 14 + RainbowKit)
+- [x] Centralized environment configuration (local/testnet/production)
+- [x] Manual testing guide for LP Dashboard
 - [ ] Circle Wallet integration
 - [ ] Circle Gateway integration
 - [ ] InvoiceRegistry, ExecutionPool, PaymentRouter contracts
