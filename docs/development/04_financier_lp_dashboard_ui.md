@@ -10,7 +10,7 @@
 ## Overview
 
 Build the complete Liquidity Provider (Financier) dashboard for Seed Finance. LPs use this interface to:
-- **Deposit USDC** to the liquidity pool and receive sfUSDC shares
+- **Deposit USDC** to the liquidity pool and receive SEED shares
 - **Monitor portfolio** value, share price, and yield performance
 - **View analytics** on pool utilization, treasury allocation, and historical returns
 - **Withdraw** their position (partially or fully)
@@ -295,7 +295,7 @@ TOOLTIP SYSTEM
 Example tooltips:
 ─────────────────────────────────────────────────────────────────────
 "Share Price"
-→ "The value of 1 sfUSDC in USDC. Increases as yield accrues
+→ "The value of 1 SEED in USDC. Increases as yield accrues
    to the pool. Your position value = shares × share price."
 
 "Utilization Rate"
@@ -476,7 +476,7 @@ app/
 ```
 
 **Data Requirements:**
-- User's sfUSDC balance
+- User's SEED balance
 - Current share price
 - Total pool TVL
 - Utilization rate
@@ -500,7 +500,7 @@ app/
 │  │ YOUR WALLET                                                                 │ │
 │  │                                                                              │ │
 │  │  USDC Balance:     $50,000.00                                               │ │
-│  │  Current Position: $125,420.50 (120,645.23 sfUSDC)                          │ │
+│  │  Current Position: $125,420.50 (120,645.23 SEED)                          │ │
 │  └────────────────────────────────────────────────────────────────────────────┘ │
 │                                                                                  │
 │  ┌────────────────────────────────────────────────────────────────────────────┐ │
@@ -518,7 +518,7 @@ app/
 │  ┌────────────────────────────────────────────────────────────────────────────┐ │
 │  │ YOU WILL RECEIVE                                                            │ │
 │  │                                                                              │ │
-│  │  sfUSDC Shares:        9,622.83 sfUSDC                                      │ │
+│  │  SEED Shares:        9,622.83 SEED                                      │ │
 │  │  Share Price:          1.0392 USDC                                          │ │
 │  │  Estimated APY:        7.42%                                                │ │
 │  │  Est. Monthly Yield:   ~$61.83                                              │ │
@@ -572,7 +572,7 @@ app/
 │  ┌────────────────────────────────────────────────────────────────────────────┐ │
 │  │ YOUR POSITION                                                               │ │
 │  │                                                                              │ │
-│  │  sfUSDC Balance:    120,645.23 sfUSDC                                       │ │
+│  │  SEED Balance:    120,645.23 SEED                                       │ │
 │  │  Current Value:     $125,420.50                                             │ │
 │  │  Total Yield:       +$4,892.30                                              │ │
 │  └────────────────────────────────────────────────────────────────────────────┘ │
@@ -601,9 +601,9 @@ app/
 │  ┌────────────────────────────────────────────────────────────────────────────┐ │
 │  │ WITHDRAWAL PREVIEW                                                          │ │
 │  │                                                                              │ │
-│  │  Shares to Burn:       24,056.31 sfUSDC                                     │ │
+│  │  Shares to Burn:       24,056.31 SEED                                     │ │
 │  │  You Will Receive:     $25,000.00 USDC                                      │ │
-│  │  Remaining Position:   $100,420.50 (96,588.92 sfUSDC)                       │ │
+│  │  Remaining Position:   $100,420.50 (96,588.92 SEED)                       │ │
 │  │                                                                              │ │
 │  │  ─────────────────────────────────────────────────────────────────────────  │ │
 │  │                                                                              │ │
@@ -647,7 +647,7 @@ app/
 │  │ POSITION SUMMARY                                                            │ │
 │  │                                                                              │ │
 │  │  ┌────────────────┐   ┌────────────────┐   ┌────────────────┐              │ │
-│  │  │ Total Value    │   │ sfUSDC Shares  │   │ Share Price    │              │ │
+│  │  │ Total Value    │   │ SEED Shares  │   │ Share Price    │              │ │
 │  │  │ $125,420.50    │   │ 120,645.23     │   │ 1.0392 USDC    │              │ │
 │  │  │                │   │                │   │ +3.92% ATH     │              │ │
 │  │  └────────────────┘   └────────────────┘   └────────────────┘              │ │
@@ -782,7 +782,7 @@ app/
 │                                                                                  │
 │  ┌────────────────────────────────────────────────────────────────────────────┐ │
 │  │ ● Deposit                                                                   │ │
-│  │   +10,000 USDC → 9,622.83 sfUSDC                                           │ │
+│  │   +10,000 USDC → 9,622.83 SEED                                           │ │
 │  │   Share price: 1.0392                                                       │ │
 │  │   Feb 1, 2026 • 2:34 PM                                          [View ↗]  │ │
 │  ├────────────────────────────────────────────────────────────────────────────┤ │
@@ -795,12 +795,12 @@ app/
 │  │   Jan 30, 2026 • 12:00 AM                                        [View ↗]  │ │
 │  ├────────────────────────────────────────────────────────────────────────────┤ │
 │  │ ○ Withdrawal                                                                │ │
-│  │   -5,000 USDC ← 4,811.42 sfUSDC burned                                     │ │
+│  │   -5,000 USDC ← 4,811.42 SEED burned                                     │ │
 │  │   Share price: 1.0392                                                       │ │
 │  │   Jan 28, 2026 • 10:15 AM                                        [View ↗]  │ │
 │  ├────────────────────────────────────────────────────────────────────────────┤ │
 │  │ ● Deposit                                                                   │ │
-│  │   +50,000 USDC → 49,018.21 sfUSDC                                          │ │
+│  │   +50,000 USDC → 49,018.21 SEED                                          │ │
 │  │   Share price: 1.0200                                                       │ │
 │  │   Jan 15, 2026 • 9:00 AM                                         [View ↗]  │ │
 │  └────────────────────────────────────────────────────────────────────────────┘ │
@@ -822,8 +822,8 @@ app/
 ```
 
 **Transaction Types:**
-- **Deposit** — LP deposited USDC, received sfUSDC
-- **Withdrawal** — LP burned sfUSDC, received USDC
+- **Deposit** — LP deposited USDC, received SEED
+- **Withdrawal** — LP burned SEED, received USDC
 - **Yield Accrued** — Invoice repaid, yield distributed
 - **Treasury Yield** — Treasury strategy harvested yield
 - **Pool Event** — Rebalancing, configuration changes
@@ -852,11 +852,11 @@ app/
 │   2 hours ago                              │
 ├────────────────────────────────────────────┤
 │ ○ Deposit confirmed                        │
-│   10,000 USDC → 9,622.83 sfUSDC           │
+│   10,000 USDC → 9,622.83 SEED           │
 │   Yesterday                                │
 ├────────────────────────────────────────────┤
 │ ○ Share price milestone                    │
-│   sfUSDC reached 1.04 USDC (+4%)          │
+│   SEED reached 1.04 USDC (+4%)          │
 │   3 days ago                               │
 └────────────────────────────────────────────┘
 ```
@@ -889,7 +889,7 @@ components/
 │
 ├── wallet/                          # Web3 components
 │   ├── ConnectButton.tsx           # RainbowKit wrapper
-│   ├── WalletBalance.tsx           # USDC/sfUSDC display
+│   ├── WalletBalance.tsx           # USDC/SEED display
 │   ├── TransactionButton.tsx       # Tx submission + status
 │   └── ApprovalFlow.tsx            # Token approval UX
 │
@@ -942,7 +942,7 @@ components/
 interface PoolState {
   // Core metrics
   totalAssets: bigint;              // Total USDC under management
-  totalSupply: bigint;              // Total sfUSDC shares
+  totalSupply: bigint;              // Total SEED shares
   sharePrice: bigint;               // Assets per share (scaled)
 
   // Allocation
@@ -970,7 +970,7 @@ interface PoolState {
 // ============ User Position ============
 interface UserPosition {
   address: string;                  // Wallet address
-  sharesOwned: bigint;              // sfUSDC balance
+  sharesOwned: bigint;              // SEED balance
   currentValue: bigint;             // Shares * share price
 
   // Cost basis (from deposits/withdrawals)
@@ -1008,7 +1008,7 @@ interface Transaction {
 
   // Amounts
   assetsAmount: bigint;             // USDC
-  sharesAmount: bigint;             // sfUSDC
+  sharesAmount: bigint;             // SEED
   sharePrice: bigint;
 
   // Metadata
@@ -1585,7 +1585,7 @@ npm run test:e2e
    - Enter deposit amount
    - Complete approval transaction
    - Complete deposit transaction
-   - Verify sfUSDC balance increases
+   - Verify SEED balance increases
    - Verify position displays correctly
 
 3. **Dashboard Metrics**
@@ -1598,7 +1598,7 @@ npm run test:e2e
    - Enter withdrawal amount
    - Complete withdrawal transaction
    - Verify USDC returns to wallet
-   - Verify sfUSDC balance decreases
+   - Verify SEED balance decreases
 
 5. **Transaction History**
    - Verify deposit appears in history

@@ -7,11 +7,8 @@ import { useUserPosition, usePoolState } from '@/hooks';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@/components/wallet';
 
-// Mock share price history
-const mockSharePriceHistory = Array.from({ length: 90 }, (_, i) => ({
-  timestamp: Date.now() / 1000 - (90 - i) * 24 * 60 * 60,
-  value: 1 + (i * 0.0004) + (Math.random() * 0.002),
-}));
+// Empty share price history - will be populated from real contract events
+const mockSharePriceHistory: { timestamp: number; value: number }[] = [];
 
 export default function PortfolioPage() {
   const { isConnected } = useAccount();
@@ -67,21 +64,21 @@ export default function PortfolioPage() {
     );
   }
 
-  // Allocation data for pie chart
+  // Allocation data for pie chart - defaults to 0% until real data available
   const allocationData = [
     {
       name: 'Invoice Financing',
-      value: 60, // Would calculate from position data
+      value: 0,
       color: '#3B82F6',
     },
     {
       name: 'Treasury (USYC)',
-      value: 20,
+      value: 0,
       color: '#10B981',
     },
     {
       name: 'Liquid Reserve',
-      value: 20,
+      value: 0,
       color: '#64748B',
     },
   ];
@@ -106,8 +103,8 @@ export default function PortfolioPage() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <p className="metric-label">sfUSDC Shares</p>
-              <Tooltip content={tooltipContent.sfUSDC} />
+              <p className="metric-label">SEED Shares</p>
+              <Tooltip content={tooltipContent.seed} />
             </div>
             <p className="metric-value">{formattedPosition?.sharesOwned}</p>
           </div>
@@ -117,7 +114,6 @@ export default function PortfolioPage() {
               <Tooltip content={tooltipContent.sharePrice} />
             </div>
             <p className="metric-value">{formattedState?.sharePrice} USDC</p>
-            <p className="text-body-sm text-success mt-1">+3.92% ATH</p>
           </div>
         </div>
 
@@ -157,7 +153,7 @@ export default function PortfolioPage() {
                   <span className="text-body text-white">Invoice Financing</span>
                 </div>
                 <span className="text-body font-mono text-white">
-                  {formattedPosition?.proportionalDeployed} (60%)
+                  $0.00 (0%)
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -166,7 +162,7 @@ export default function PortfolioPage() {
                   <span className="text-body text-white">Treasury (USYC)</span>
                 </div>
                 <span className="text-body font-mono text-white">
-                  {formattedPosition?.proportionalTreasury} (20%)
+                  $0.00 (0%)
                 </span>
               </div>
               <div className="flex justify-between items-center">
@@ -175,7 +171,7 @@ export default function PortfolioPage() {
                   <span className="text-body text-white">Liquid Reserve</span>
                 </div>
                 <span className="text-body font-mono text-white">
-                  {formattedPosition?.proportionalLiquid} (20%)
+                  $0.00 (0%)
                 </span>
               </div>
             </div>
@@ -188,18 +184,24 @@ export default function PortfolioPage() {
         <CardHeader>
           <CardTitle>Share Price History</CardTitle>
         </CardHeader>
-        <LineChart
-          data={mockSharePriceHistory}
-          color="#3B82F6"
-          height={250}
-          formatValue={(v) => `${v.toFixed(4)} USDC`}
-          formatLabel={(t) =>
-            new Date(t * 1000).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            })
-          }
-        />
+        {mockSharePriceHistory.length === 0 ? (
+          <div className="h-[250px] flex items-center justify-center">
+            <p className="text-cool-gray text-body-sm">No data available</p>
+          </div>
+        ) : (
+          <LineChart
+            data={mockSharePriceHistory}
+            color="#3B82F6"
+            height={250}
+            formatValue={(v) => `${v.toFixed(4)} USDC`}
+            formatLabel={(t) =>
+              new Date(t * 1000).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+            }
+          />
+        )}
       </Card>
 
       {/* Yield Sources */}
@@ -211,20 +213,20 @@ export default function PortfolioPage() {
           <div className="flex justify-between items-center pb-3 border-b border-slate-700">
             <span className="text-body text-white">Invoice Spread Yield</span>
             <div className="text-right">
-              <span className="text-body font-mono text-white">$4,156.45</span>
-              <span className="text-body-sm text-cool-gray ml-2">(85%)</span>
+              <span className="text-body font-mono text-white">$0.00</span>
+              <span className="text-body-sm text-cool-gray ml-2">(0%)</span>
             </div>
           </div>
           <div className="flex justify-between items-center pb-3 border-b border-slate-700">
             <span className="text-body text-white">Treasury Yield (USYC)</span>
             <div className="text-right">
-              <span className="text-body font-mono text-white">$735.85</span>
-              <span className="text-body-sm text-cool-gray ml-2">(15%)</span>
+              <span className="text-body font-mono text-white">$0.00</span>
+              <span className="text-body-sm text-cool-gray ml-2">(0%)</span>
             </div>
           </div>
           <div className="flex justify-between items-center pt-2">
             <span className="text-body font-medium text-white">Total Yield Earned</span>
-            <span className="text-body font-mono text-success">$4,892.30</span>
+            <span className="text-body font-mono text-white">$0.00</span>
           </div>
         </div>
       </Card>

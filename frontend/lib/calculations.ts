@@ -1,5 +1,5 @@
 import { formatUnits, parseUnits } from 'viem';
-import { USDC_DECIMALS, SFUSDC_DECIMALS } from './contracts';
+import { USDC_DECIMALS, SEED_DECIMALS } from './contracts';
 
 /**
  * Calculate shares received for a given deposit amount
@@ -12,8 +12,8 @@ export function calculateSharesForDeposit(
 ): bigint {
   if (totalAssets === 0n) {
     // First deposit: 1:1 ratio
-    // Both USDC and sfUSDC have 6 decimals (ERC4626 inherits from underlying)
-    return depositAmount * 10n ** BigInt(SFUSDC_DECIMALS - USDC_DECIMALS);
+    // Both USDC and SEED have 6 decimals (ERC4626 inherits from underlying)
+    return depositAmount * 10n ** BigInt(SEED_DECIMALS - USDC_DECIMALS);
   }
   return (depositAmount * totalSupply) / totalAssets;
 }
@@ -52,8 +52,8 @@ export function calculateSharePrice(
   totalSupply: bigint
 ): number {
   if (totalSupply === 0n) return 1.0;
-  // Calculate value of 1 share (1e6 for 6 decimal sfUSDC)
-  const oneShare = 10n ** BigInt(SFUSDC_DECIMALS);
+  // Calculate value of 1 share (1e6 for 6 decimal SEED)
+  const oneShare = 10n ** BigInt(SEED_DECIMALS);
   const priceInAssets = (oneShare * totalAssets) / totalSupply;
   return parseFloat(formatUnits(priceInAssets, USDC_DECIMALS));
 }
@@ -117,8 +117,8 @@ export function calculatePoolOwnership(
   totalSupply: bigint
 ): number {
   if (totalSupply === 0n) return 0;
-  const ownership = parseFloat(formatUnits(userShares, SFUSDC_DECIMALS)) /
-                    parseFloat(formatUnits(totalSupply, SFUSDC_DECIMALS));
+  const ownership = parseFloat(formatUnits(userShares, SEED_DECIMALS)) /
+                    parseFloat(formatUnits(totalSupply, SEED_DECIMALS));
   return ownership * 100;
 }
 

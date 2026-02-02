@@ -65,7 +65,7 @@ cd /path/to/seed-finance/contracts
 Tests the core liquidity provider experience:
 1. Mint USDC to LP user (simulates fiat on-ramp)
 2. LP approves and deposits 100k USDC to pool
-3. Verify LP receives correct sfUSDC shares (1:1 initially)
+3. Verify LP receives correct SEED shares (1:1 initially)
 4. LP withdraws 50k USDC
 5. Verify share balance and USDC balance are correct
 

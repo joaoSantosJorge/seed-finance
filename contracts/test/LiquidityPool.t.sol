@@ -26,7 +26,7 @@ contract LiquidityPoolTest is Test {
         usdc = new MockUSDC();
 
         // Deploy LiquidityPool
-        pool = new LiquidityPool(IERC20(address(usdc)), "Seed Finance USDC", "sfUSDC");
+        pool = new LiquidityPool(IERC20(address(usdc)), "Seed", "SEED");
 
         // Grant roles
         pool.grantRole(pool.ROUTER_ROLE(), router);
@@ -46,8 +46,8 @@ contract LiquidityPoolTest is Test {
     // ============ Deployment Tests ============
 
     function test_Deployment() public view {
-        assertEq(pool.name(), "Seed Finance USDC");
-        assertEq(pool.symbol(), "sfUSDC");
+        assertEq(pool.name(), "Seed");
+        assertEq(pool.symbol(), "SEED");
         assertEq(pool.asset(), address(usdc));
         assertEq(pool.totalAssets(), 0);
         assertEq(pool.liquidityBuffer(), 100_000e6);

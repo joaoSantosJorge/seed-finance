@@ -8,16 +8,19 @@ const defaults: Record<Environment, ContractAddresses> = {
     usdc: ZERO, // Set via env var after Anvil deploy
     liquidityPool: ZERO,
     treasuryManager: ZERO,
+    lifiReceiver: ZERO,
   },
   testnet: {
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as Address,
     liquidityPool: ZERO, // Set via env var after deploy
     treasuryManager: ZERO,
+    lifiReceiver: ZERO, // Set via env var after deploy
   },
   production: {
     usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address,
     liquidityPool: ZERO,
     treasuryManager: ZERO,
+    lifiReceiver: ZERO,
   },
 };
 
@@ -31,9 +34,12 @@ export function getContractAddresses(env: Environment): ContractAddresses {
     treasuryManager:
       (process.env.NEXT_PUBLIC_TREASURY_MANAGER_ADDRESS as Address) ||
       d.treasuryManager,
+    lifiReceiver:
+      (process.env.NEXT_PUBLIC_LIFI_RECEIVER_ADDRESS as Address) ||
+      d.lifiReceiver,
   };
 }
 
 export const USDC_DECIMALS = 6;
-// sfUSDC shares inherit decimals from underlying asset (USDC) via ERC4626
-export const SFUSDC_DECIMALS = 6;
+// SEED shares inherit decimals from underlying asset (USDC) via ERC4626
+export const SEED_DECIMALS = 6;

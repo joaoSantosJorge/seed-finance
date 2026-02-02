@@ -160,9 +160,9 @@ export function DepositForm({ onSuccess }: DepositFormProps) {
           </CardHeader>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-body text-cool-gray">sfUSDC Shares</span>
+              <span className="text-body text-cool-gray">SEED Shares</span>
               <span className="text-body font-mono text-white">
-                {previewShares ? formatShares(previewShares) : '—'} sfUSDC
+                {previewShares ? formatShares(previewShares) : '—'} SEED
               </span>
             </div>
             <div className="flex justify-between">
@@ -253,7 +253,7 @@ export function DepositForm({ onSuccess }: DepositFormProps) {
                 <p className="text-body text-white">Deposit to pool</p>
                 {!depositSuccess && (
                   <p className="text-body-sm text-cool-gray">
-                    Receive sfUSDC shares
+                    Receive SEED shares
                   </p>
                 )}
               </div>

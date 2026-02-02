@@ -43,7 +43,7 @@ frontend/lib/config/
 ### Contracts (`contracts.ts`)
 - Default addresses per environment (USDC hardcoded, others from env vars)
 - `getContractAddresses(env)`: Get addresses for an environment
-- `USDC_DECIMALS = 6`, `SFUSDC_DECIMALS = 18`
+- `USDC_DECIMALS = 6`, `SEED_DECIMALS = 18`
 
 ### Environment (`env.ts`)
 - `appConfig`: Singleton with all config
@@ -52,7 +52,7 @@ frontend/lib/config/
 ## Backward Compatibility
 
 The existing `frontend/lib/contracts.ts` was converted to a wrapper that:
-- Exports `USDC_DECIMALS` and `SFUSDC_DECIMALS` from config
+- Exports `USDC_DECIMALS` and `SEED_DECIMALS` from config
 - Provides `getContractAddresses(chainId?)` that ignores chainId and uses appConfig
 - Provides overloaded `getExplorerTxUrl` and `getExplorerAddressUrl` functions that work with both old (chainId, hash) and new (hash-only) signatures
 

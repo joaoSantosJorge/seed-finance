@@ -47,7 +47,7 @@ Expected: Next.js dev server on `http://localhost:3000`.
 
 ### 1.2 Update Environment Variables
 
-Copy contract addresses from deploy output to `.env.local`:
+Copy contract addresses from deploy output to `.env.local` (in /frontend):
 ```env
 NEXT_PUBLIC_ENV=local
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=demo-project-id
@@ -56,15 +56,11 @@ NEXT_PUBLIC_LIQUIDITY_POOL_ADDRESS=<LiquidityPool address>
 NEXT_PUBLIC_TREASURY_MANAGER_ADDRESS=<TreasuryManager address>
 ```
 
-### 1.3 Fund Test Wallet with USDC
+### 1.3 Fund Test Wallet with USDC (run on any terminal if anvil is running on http://127.0.0.1:8545)
 
 ```bash
 # Mint 1,000,000 USDC to LP test account
-cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
-  0x70997970C51812dc3A010C7d01b50e0d17dc79C8 \
-  1000000000000 \
-  --rpc-url http://127.0.0.1:8545 \
-  --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" 0x70997970C51812dc3A010C7d01b50e0d17dc79C8 1000000000000 --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
 
 ---
@@ -112,11 +108,11 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
-| 3.2.1 | No position state | Connect wallet with 0 sfUSDC | Shows "$0.00" position value |
+| 3.2.1 | No position state | Connect wallet with 0 SEED | Shows "$0.00" position value |
 | 3.2.2 | With position | After depositing | Shows correct position value in USDC |
 | 3.2.3 | Unrealized gain display | After share price increases | Shows gain amount with green up arrow |
-| 3.2.4 | Share balance | Check sfUSDC display | Matches wallet's sfUSDC balance |
-| 3.2.5 | Share price | Check current price | Shows USDC per sfUSDC (e.g., "1.0234") |
+| 3.2.4 | Share balance | Check SEED display | Matches wallet's SEED balance |
+| 3.2.5 | Share price | Check current price | Shows USDC per SEED (e.g., "1.0234") |
 | 3.2.6 | APY display | Check estimated APY | Shows percentage (e.g., "7.42%") |
 | 3.2.7 | Monthly yield estimate | Check monthly projection | Calculated as (position × APY / 12) |
 
@@ -208,7 +204,7 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
 | 4.5.1 | Preview appears | Enter amount > 0 | "You Will Receive" card appears |
-| 4.5.2 | Shares calculation | Enter 1000 USDC | Shows expected sfUSDC shares |
+| 4.5.2 | Shares calculation | Enter 1000 USDC | Shows expected SEED shares |
 | 4.5.3 | Share price shown | View preview | Shows current share price |
 | 4.5.4 | APY shown | View preview | Shows estimated APY (e.g., "7.42%") |
 | 4.5.5 | Monthly yield | View preview | Shows calculated monthly yield |
@@ -249,7 +245,7 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
 | 4.9.1 | USDC balance decreased | Check wallet | USDC reduced by deposit amount |
-| 4.9.2 | sfUSDC received | Check wallet | sfUSDC tokens received |
+| 4.9.2 | SEED received | Check wallet | SEED tokens received |
 | 4.9.3 | Dashboard updated | Return to dashboard | Position value increased |
 
 ---
@@ -264,14 +260,14 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 |---|-----------|-------|-----------------|
 | 5.1.1 | Access without wallet | Navigate without connecting | "Connect wallet" prompt shown |
 | 5.1.2 | Access with wallet | Navigate while connected | Full withdraw form displayed |
-| 5.1.3 | Access with no position | Connect wallet with 0 sfUSDC | "No position" message shown |
+| 5.1.3 | Access with no position | Connect wallet with 0 SEED | "No position" message shown |
 | 5.1.4 | Back navigation | Click back arrow | Returns to `/dashboard/financier` |
 
 ### 5.2 Position Card Tests
 
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
-| 5.2.1 | sfUSDC balance | View position card | Shows current sfUSDC balance |
+| 5.2.1 | SEED balance | View position card | Shows current SEED balance |
 | 5.2.2 | Current value | View position card | Shows USDC value of shares |
 | 5.2.3 | Loading state | Refresh page | Skeleton loader, then data |
 
@@ -291,14 +287,14 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 | 5.4.1 | Enter USDC amount | Type "500" | Input accepts, preview shows shares to burn |
 | 5.4.2 | Quick buttons | Click 25/50/75/MAX | Fills input with % of max withdrawable |
 | 5.4.3 | Exceeds max | Enter more than max | Error "Insufficient shares" |
-| 5.4.4 | Preview shows shares | Enter valid amount | Shows sfUSDC to burn |
+| 5.4.4 | Preview shows shares | Enter valid amount | Shows SEED to burn |
 
 ### 5.5 Share Amount Mode Tests
 
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
 | 5.5.1 | Enter share amount | Type "100" | Input accepts (18 decimals allowed) |
-| 5.5.2 | Quick buttons | Click 25/50/75/MAX | Fills with % of sfUSDC balance |
+| 5.5.2 | Quick buttons | Click 25/50/75/MAX | Fills with % of SEED balance |
 | 5.5.3 | Exceeds balance | Enter more than owned | Error "Insufficient shares" |
 | 5.5.4 | Preview shows USDC | Enter valid amount | Shows USDC to receive |
 
@@ -308,13 +304,13 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 |---|-----------|-------|-----------------|
 | 5.6.1 | No input field | Select Withdraw ALL | Amount input hidden |
 | 5.6.2 | Preview full position | View preview | Shows all shares and full USDC value |
-| 5.6.3 | Remaining position | View preview | Shows "0 sfUSDC" remaining |
+| 5.6.3 | Remaining position | View preview | Shows "0 SEED" remaining |
 
 ### 5.7 Preview Card Tests
 
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
-| 5.7.1 | Shares to burn | Enter amount | Shows sfUSDC being burned |
+| 5.7.1 | Shares to burn | Enter amount | Shows SEED being burned |
 | 5.7.2 | USDC to receive | Enter amount | Shows USDC after withdrawal |
 | 5.7.3 | Remaining position | Enter partial | Shows remaining shares and value |
 | 5.7.4 | Full withdrawal preview | Enter MAX | Remaining shows 0 |
@@ -351,7 +347,7 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
 | 5.11.1 | USDC received | Check wallet | USDC balance increased |
-| 5.11.2 | sfUSDC burned | Check wallet | sfUSDC balance decreased |
+| 5.11.2 | SEED burned | Check wallet | SEED balance decreased |
 | 5.11.3 | Dashboard updated | Return to dashboard | Position value decreased |
 
 ---
@@ -365,15 +361,15 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
 | 6.1.1 | Access without wallet | Navigate without connecting | "Connect wallet" prompt |
-| 6.1.2 | Access with no position | Connect with 0 sfUSDC | "No position yet" message |
-| 6.1.3 | Access with position | Connect with sfUSDC | Full portfolio view |
+| 6.1.2 | Access with no position | Connect with 0 SEED | "No position yet" message |
+| 6.1.3 | Access with position | Connect with SEED | Full portfolio view |
 
 ### 6.2 Position Summary Tests
 
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
 | 6.2.1 | Total value | View summary | Shows USDC value of position |
-| 6.2.2 | Shares owned | View summary | Shows sfUSDC balance with tooltip |
+| 6.2.2 | Shares owned | View summary | Shows SEED balance with tooltip |
 | 6.2.3 | Share price | View summary | Current price in USDC |
 | 6.2.4 | Share price change | View summary | Shows % change (e.g., "+3.92% ATH") |
 | 6.2.5 | Cost basis | View summary | Shows net deposits |
@@ -511,8 +507,8 @@ cast send <MOCK_USDC_ADDRESS> "mint(address,uint256)" \
 | # | Test Case | Steps | Expected Result |
 |---|-----------|-------|-----------------|
 | 8.3.1 | List renders | View transactions | Cards with transaction info |
-| 8.3.2 | Deposit display | View deposit tx | Green icon, "+X USDC → Y sfUSDC" |
-| 8.3.3 | Withdrawal display | View withdrawal tx | Blue icon, "-X sfUSDC → Y USDC" |
+| 8.3.2 | Deposit display | View deposit tx | Green icon, "+X USDC → Y SEED" |
+| 8.3.3 | Withdrawal display | View withdrawal tx | Blue icon, "-X SEED → Y USDC" |
 | 8.3.4 | Yield display | View yield tx | Green trending icon, yield amount |
 | 8.3.5 | Pool event display | View rebalance tx | Orange refresh icon |
 | 8.3.6 | Timestamp | Check time | Shows relative time (e.g., "2 hours ago") |

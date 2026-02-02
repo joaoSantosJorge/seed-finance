@@ -16,7 +16,7 @@ import {
   usePoolState,
   useAvailableLiquidity,
 } from '@/hooks';
-import { USDC_DECIMALS, SFUSDC_DECIMALS } from '@/lib/contracts';
+import { USDC_DECIMALS, SEED_DECIMALS } from '@/lib/contracts';
 import { formatCurrency, formatShares } from '@/lib/formatters';
 import { calculateAssetsForShares } from '@/lib/calculations';
 import { AlertTriangle } from 'lucide-react';
@@ -106,7 +106,7 @@ export function WithdrawForm({ onSuccess }: WithdrawFormProps) {
 
   const handleQuickAmount = (value: bigint) => {
     setRawAmount(value);
-    const decimals = mode === 'shares' ? SFUSDC_DECIMALS : USDC_DECIMALS;
+    const decimals = mode === 'shares' ? SEED_DECIMALS : USDC_DECIMALS;
     setAmount(formatUnits(value, decimals));
   };
 
@@ -156,12 +156,12 @@ export function WithdrawForm({ onSuccess }: WithdrawFormProps) {
         </CardHeader>
         <div className="space-y-3">
           <div className="flex justify-between">
-            <span className="text-body text-cool-gray">sfUSDC Balance</span>
+            <span className="text-body text-cool-gray">SEED Balance</span>
             {loadingShares ? (
               <Skeleton className="h-5 w-24" />
             ) : (
               <span className="text-body font-mono text-white">
-                {userShares ? formatShares(userShares) : '0.00'} sfUSDC
+                {userShares ? formatShares(userShares) : '0.00'} SEED
               </span>
             )}
           </div>
@@ -215,8 +215,8 @@ export function WithdrawForm({ onSuccess }: WithdrawFormProps) {
               value={amount}
               onChange={handleAmountChange}
               maxValue={mode === 'shares' ? userShares : maxWithdraw}
-              decimals={mode === 'shares' ? SFUSDC_DECIMALS : USDC_DECIMALS}
-              rightElement={mode === 'shares' ? 'sfUSDC' : 'USDC'}
+              decimals={mode === 'shares' ? SEED_DECIMALS : USDC_DECIMALS}
+              rightElement={mode === 'shares' ? 'SEED' : 'USDC'}
               error={error}
               disabled={isPending || isConfirming || isSuccess}
             />
@@ -224,7 +224,7 @@ export function WithdrawForm({ onSuccess }: WithdrawFormProps) {
               <QuickAmountButtons
                 maxValue={userShares}
                 onSelect={handleQuickAmount}
-                decimals={SFUSDC_DECIMALS}
+                decimals={SEED_DECIMALS}
               />
             )}
             {mode === 'assets' && maxWithdraw && maxWithdraw > 0n && (
@@ -247,7 +247,7 @@ export function WithdrawForm({ onSuccess }: WithdrawFormProps) {
             <div className="flex justify-between">
               <span className="text-body text-cool-gray">Shares to Burn</span>
               <span className="text-body font-mono text-white">
-                {formatShares(sharesToBurn)} sfUSDC
+                {formatShares(sharesToBurn)} SEED
               </span>
             </div>
             <div className="flex justify-between">
@@ -261,7 +261,7 @@ export function WithdrawForm({ onSuccess }: WithdrawFormProps) {
               <span className="text-body font-mono text-white">
                 {formatCurrency(parseFloat(formatUnits(remainingValue, USDC_DECIMALS)))}
                 <span className="text-cool-gray ml-1">
-                  ({formatShares(remainingShares)} sfUSDC)
+                  ({formatShares(remainingShares)} SEED)
                 </span>
               </span>
             </div>

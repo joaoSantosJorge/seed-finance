@@ -25,7 +25,7 @@ Implement the core liquidity layer contracts:
 │                                                                              │
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
 │  │                    LiquidityPool.sol (ERC-4626)                         │ │
-│  │  • LP deposits USDC → receives sfUSDC shares                           │ │
+│  │  • LP deposits USDC → receives SEED shares                           │ │
 │  │  • Tracks: totalDeployed (invoices) + totalInTreasury (strategies)    │ │
 │  │  • Delegates idle capital management to TreasuryManager               │ │
 │  └────────────────────────────────┬───────────────────────────────────────┘ │

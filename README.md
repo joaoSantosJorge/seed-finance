@@ -32,7 +32,7 @@ Reverse factoring (also called supply chain finance) allows suppliers to get pai
 │                            ▼                                     │
 │  ┌───────────────────────────────────────────────────────────┐  │
 │  │                LiquidityPool.sol (ERC-4626)                │  │
-│  │           LP Vault — sfUSDC share tokens                   │  │
+│  │           LP Vault — SEED share tokens                   │  │
 │  └─────────────────────────┬─────────────────────────────────┘  │
 │                            │                                     │
 │                            ▼                                     │
@@ -55,7 +55,7 @@ Reverse factoring (also called supply chain finance) allows suppliers to get pai
 
 ## How It Works
 
-1. **LPs deposit USDC** to LiquidityPool on Base → receive sfUSDC shares
+1. **LPs deposit USDC** to LiquidityPool on Base → receive SEED shares
 2. **Supplier creates invoice** on Base
 3. **Buyer approves invoice** on Base
 4. **Invoice funded** from LiquidityPool → USDC to Supplier

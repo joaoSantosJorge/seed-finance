@@ -174,7 +174,7 @@ module.exports = {
 │                                                                              │
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
 │  │                    LiquidityPool.sol (ERC-4626)                         │ │
-│  │  • LP deposits USDC, receives sfUSDC shares                            │ │
+│  │  • LP deposits USDC, receives SEED shares                            │ │
 │  │  • Tracks deployed capital vs available liquidity                      │ │
 │  │  • Automatic yield distribution via share price increase               │ │
 │  │  • Optional: USYC treasury integration for idle capital yield          │ │

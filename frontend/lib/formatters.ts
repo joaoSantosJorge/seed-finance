@@ -1,5 +1,5 @@
 import { formatUnits } from 'viem';
-import { USDC_DECIMALS, SFUSDC_DECIMALS } from './contracts';
+import { USDC_DECIMALS, SEED_DECIMALS } from './contracts';
 
 // ============ Number Formatting ============
 
@@ -18,10 +18,10 @@ export function formatUSDC(amount: bigint, showSign = false): string {
 }
 
 /**
- * Format sfUSDC shares (6 decimals, same as underlying USDC) to display string
+ * Format SEED shares (6 decimals, same as underlying USDC) to display string
  */
 export function formatShares(amount: bigint, decimals = 2): string {
-  const value = parseFloat(formatUnits(amount, SFUSDC_DECIMALS));
+  const value = parseFloat(formatUnits(amount, SEED_DECIMALS));
   return value.toLocaleString('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -155,7 +155,7 @@ export function formatRelativeTime(timestamp: number): string {
 /**
  * Format share price (1 share = X USDC)
  * Share price is typically close to 1.0 but increases as yield is earned
- * @param priceInAssets USDC value of 1 sfUSDC share (from convertToAssets(1e6))
+ * @param priceInAssets USDC value of 1 SEED share (from convertToAssets(1e6))
  */
 export function formatSharePrice(priceInAssets: bigint): string {
   const price = parseFloat(formatUnits(priceInAssets, USDC_DECIMALS));

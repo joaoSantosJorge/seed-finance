@@ -58,7 +58,7 @@ See [Architecture Analysis](../docs/01_architecture_analysis.md) for detailed ra
 │  ┌───────────────────────────────────────────────────────────────────────┐  │
 │  │                     LAYER 1: CAPITAL (Base)                            │  │
 │  │  • LiquidityPool.sol — ERC-4626 vault for LP deposits                 │  │
-│  │  • sfUSDC share tokens — Automatic yield distribution                 │  │
+│  │  • SEED share tokens — Automatic yield distribution                 │  │
 │  │  • TreasuryManager.sol — USYC yield optimization (optional)          │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                      │                                       │
@@ -86,7 +86,7 @@ See [Architecture Analysis](../docs/01_architecture_analysis.md) for detailed ra
 ```
 PHASE 1: LIQUIDITY DEPOSIT
 ──────────────────────────
-LP deposits USDC → Base LiquidityPool → sfUSDC tokens
+LP deposits USDC → Base LiquidityPool → SEED tokens
 
 PHASE 2: INVOICE CREATION
 ─────────────────────────
@@ -140,7 +140,7 @@ PHASE 7: YIELD DISTRIBUTION
 ExecutionPool → LiquidityPool.receiveRepayment(principal, yield)
                        │
                        ▼
-               sfUSDC share value increases
+               SEED share value increases
                LPs earn yield automatically
 ```
 
@@ -235,7 +235,7 @@ Off-Ramp (Supplier Payout):
 
 1. **Immutable Invoice Registry** — Zero double-financing fraud
 2. **Programmable Payments** — Auto-execute at maturity
-3. **Composable LP Tokens** — Use sfUSDC as collateral elsewhere
+3. **Composable LP Tokens** — Use SEED as collateral elsewhere
 4. **Portable Credit History** — On-chain reputation
 5. **Global Liquidity** — Access DeFi ecosystem
 

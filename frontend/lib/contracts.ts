@@ -1,6 +1,6 @@
-import { appConfig, USDC_DECIMALS, SFUSDC_DECIMALS } from './config';
+import { appConfig, USDC_DECIMALS, SEED_DECIMALS } from './config';
 
-export { USDC_DECIMALS, SFUSDC_DECIMALS };
+export { USDC_DECIMALS, SEED_DECIMALS };
 
 // Backward-compatible wrapper - chainId parameter is ignored, uses appConfig
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

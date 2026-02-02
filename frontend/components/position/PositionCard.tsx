@@ -56,7 +56,7 @@ export function PositionCard() {
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="metric-label">YOUR POSITION</span>
-            <Tooltip content={tooltipContent.sfUSDC} />
+            <Tooltip content={tooltipContent.seed} />
           </div>
           <div className="text-display font-mono text-white">
             {formattedPosition?.currentValue}
@@ -74,7 +74,7 @@ export function PositionCard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-slate-700">
           <div>
-            <p className="text-body-sm text-cool-gray mb-1">sfUSDC Shares</p>
+            <p className="text-body-sm text-cool-gray mb-1">SEED Shares</p>
             <p className="text-body font-mono text-white">{formattedPosition?.sharesOwned}</p>
           </div>
           <div>

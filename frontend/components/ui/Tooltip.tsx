@@ -55,7 +55,7 @@ export function Tooltip({
 // Predefined tooltips for financial terms
 export const tooltipContent = {
   sharePrice:
-    'The value of 1 sfUSDC in USDC. Increases as yield accrues to the pool. Your position value = shares x share price.',
+    'The value of 1 SEED in USDC. Increases as yield accrues to the pool. Your position value = shares x share price.',
   utilizationRate:
     'Percentage of pool capital currently deployed to finance invoices. Higher utilization = more capital earning yield.',
   availableLiquidity:
@@ -63,6 +63,6 @@ export const tooltipContent = {
   treasuryAllocation:
     'Percentage of idle capital deployed to treasury strategies (like USYC) to earn additional yield.',
   apy: 'Annual Percentage Yield - the annualized return you can expect on your deposit based on current pool performance.',
-  sfUSDC:
-    'Seed Finance USDC shares - ERC-4626 vault tokens that represent your share of the liquidity pool.',
+  seed:
+    'SEED shares - ERC-4626 vault tokens that represent your share of the liquidity pool.',
 };

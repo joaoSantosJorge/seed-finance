@@ -88,7 +88,7 @@ See `docs/01_architecture_analysis.md` for the full analysis.
 │  LP deposits USDC directly to Base LiquidityPool                             │
 │         │                                                                     │
 │         ▼                                                                     │
-│  LP receives sfUSDC share tokens (ERC-4626)                                  │
+│  LP receives SEED share tokens (ERC-4626)                                  │
 │                                                                               │
 │  PHASE 2: INVOICE CREATION (on Base)                                         │
 │  ────────────────────────────────────                                         │
@@ -232,7 +232,7 @@ npm install ethers@^6.0.0                             # Ethereum library
 │                                                                              │
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
 │  │                    LiquidityPool.sol (ERC-4626)                         │ │
-│  │  • LP deposits USDC, receives sfUSDC shares                            │ │
+│  │  • LP deposits USDC, receives SEED shares                            │ │
 │  │  • Tracks deployed capital vs available liquidity                      │ │
 │  │  • Automatic yield distribution via share price increase               │ │
 │  │  • Optional: USYC treasury integration for idle capital yield          │ │
@@ -323,7 +323,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 /**
  * @title SeedFinance Liquidity Pool
  * @notice ERC-4626 vault for USDC deposits on Base
- * @dev LPs deposit USDC, receive sfUSDC shares, earn yield from invoice financing
+ * @dev LPs deposit USDC, receive SEED shares, earn yield from invoice financing
  */
 contract LiquidityPool is ERC4626, AccessControl {
     using SafeERC20 for IERC20;

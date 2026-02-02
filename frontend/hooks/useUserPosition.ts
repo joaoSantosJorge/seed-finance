@@ -12,7 +12,7 @@ import {
   useAvailableLiquidity,
 } from './contracts/useLiquidityPool';
 import { useUSDCBalance } from './contracts/useUSDC';
-import { USDC_DECIMALS, SFUSDC_DECIMALS } from '@/lib/contracts';
+import { USDC_DECIMALS } from '@/lib/contracts';
 import {
   calculateAssetsForShares,
   calculatePoolOwnership,

@@ -250,7 +250,7 @@ deploy_all_contracts() {
     # Deploy LiquidityPool (ERC-4626 vault)
     print_step "Deploying LiquidityPool..."
     LIQUIDITY_POOL_ADDR=$(forge_deploy "src/base/LiquidityPool.sol" "LiquidityPool" \
-        "$USDC_ADDR" "Seed Finance USDC" "sfUSDC")
+        "$USDC_ADDR" "Seed" "SEED")
     if [[ "$LIQUIDITY_POOL_ADDR" == DEPLOY_FAILED* ]]; then
         print_fail "Failed to deploy LiquidityPool"
         echo "${LIQUIDITY_POOL_ADDR#DEPLOY_FAILED:}"
@@ -334,10 +334,10 @@ test_scenario_1() {
     print_step "LP depositing 100k USDC..."
     send_tx $LIQUIDITY_POOL_ADDR "deposit(uint256,address)" $LP_USER_PK $HUNDRED_K_USDC $LP_USER_ADDR
 
-    # Check sfUSDC shares received
+    # Check SEED shares received
     local shares=$(check_balance $LIQUIDITY_POOL_ADDR $LP_USER_ADDR)
     local shares_formatted=$(format_usdc $shares)
-    print_success "LP received sfUSDC shares: $shares_formatted"
+    print_success "LP received SEED shares: $shares_formatted"
 
     # Check pool totalAssets
     local total_assets=$(call_contract $LIQUIDITY_POOL_ADDR "totalAssets()(uint256)")
@@ -355,7 +355,7 @@ test_scenario_1() {
     local final_shares_fmt=$(format_usdc $final_shares)
 
     print_success "Final LP USDC balance: $final_usdc_fmt USDC"
-    print_success "Final LP sfUSDC shares: $final_shares_fmt"
+    print_success "Final LP SEED shares: $final_shares_fmt"
 
     echo ""
     print_success "Scenario 1 PASSED"

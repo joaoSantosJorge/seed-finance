@@ -315,7 +315,7 @@ const response = await circleContractSdk.deployContractTemplate({
   walletId: process.env.WALLET_ID,
   templateParameters: {
     name: "Seed Finance LP Token",
-    symbol: "sfUSDC",
+    symbol: "SEED",
     defaultAdmin: walletAddress,
     primarySaleRecipient: walletAddress,
   },

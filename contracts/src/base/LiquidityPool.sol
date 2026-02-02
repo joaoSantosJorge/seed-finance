@@ -13,7 +13,7 @@ import "../interfaces/ITreasuryStrategy.sol";
 /**
  * @title SeedFinance Liquidity Pool
  * @notice ERC-4626 vault for USDC deposits on Base
- * @dev LPs deposit USDC, receive sfUSDC shares, earn yield from:
+ * @dev LPs deposit USDC, receive SEED shares, earn yield from:
  *      1. Invoice financing spreads (primary)
  *      2. Treasury strategies on idle capital (secondary)
  *
@@ -85,8 +85,8 @@ contract LiquidityPool is ERC4626, AccessControl, ReentrancyGuard, Pausable {
     /**
      * @notice Initialize the liquidity pool
      * @param _usdc USDC token address on Base
-     * @param _name Share token name (e.g., "Seed Finance USDC")
-     * @param _symbol Share token symbol (e.g., "sfUSDC")
+     * @param _name Share token name (e.g., "Seed")
+     * @param _symbol Share token symbol (e.g., "SEED")
      */
     constructor(
         IERC20 _usdc,
@@ -114,7 +114,7 @@ contract LiquidityPool is ERC4626, AccessControl, ReentrancyGuard, Pausable {
     }
 
     /**
-     * @notice Deposit USDC and receive sfUSDC shares
+     * @notice Deposit USDC and receive SEED shares
      * @dev Overridden to add pausable check
      */
     function deposit(

@@ -15,7 +15,7 @@ import {
   useTotalTreasuryYield,
   usePoolPaused,
 } from './contracts/useLiquidityPool';
-import { USDC_DECIMALS, SFUSDC_DECIMALS } from '@/lib/contracts';
+import { USDC_DECIMALS, SEED_DECIMALS } from '@/lib/contracts';
 import { formatCurrency, formatBps, formatSharePrice } from '@/lib/formatters';
 import type { PoolState, FormattedPoolState } from '@/types';
 
@@ -97,7 +97,7 @@ export function usePoolState() {
         parseFloat(formatUnits(poolState.totalAssets, USDC_DECIMALS)),
         true
       ),
-      totalSupply: parseFloat(formatUnits(poolState.totalSupply, SFUSDC_DECIMALS)).toLocaleString(
+      totalSupply: parseFloat(formatUnits(poolState.totalSupply, SEED_DECIMALS)).toLocaleString(
         'en-US',
         { maximumFractionDigits: 2 }
       ),

@@ -4,7 +4,7 @@ import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 
 import { type Address, parseUnits } from 'viem';
 import { useChainId } from 'wagmi';
 import { liquidityPoolAbi } from '@/abis/LiquidityPool';
-import { getContractAddresses, USDC_DECIMALS, SFUSDC_DECIMALS } from '@/lib/contracts';
+import { getContractAddresses, USDC_DECIMALS, SEED_DECIMALS } from '@/lib/contracts';
 
 // ============ Pool State Reads ============
 
@@ -40,12 +40,12 @@ export function useSharePrice() {
   const chainId = useChainId();
   const addresses = getContractAddresses(chainId);
 
-  // Get the asset value of 1 sfUSDC share (1e6, same decimals as USDC)
+  // Get the asset value of 1 SEED share (1e6, same decimals as USDC)
   return useReadContract({
     address: addresses.liquidityPool,
     abi: liquidityPoolAbi,
     functionName: 'convertToAssets',
-    args: [parseUnits('1', SFUSDC_DECIMALS)],
+    args: [parseUnits('1', SEED_DECIMALS)],
     query: {
       refetchInterval: 30000,
     },
