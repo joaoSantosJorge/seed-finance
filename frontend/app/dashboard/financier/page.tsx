@@ -9,19 +9,11 @@ import { AreaChart } from '@/components/charts';
 import { usePoolState } from '@/hooks';
 import { formatCurrency } from '@/lib/formatters';
 
-// Mock yield data for chart
-const mockYieldData = Array.from({ length: 30 }, (_, i) => ({
-  timestamp: Date.now() / 1000 - (30 - i) * 24 * 60 * 60,
-  value: 100 + Math.random() * 50 + i * 3,
-}));
+// Empty data - will be populated from real contract data
+const mockYieldData: { timestamp: number; value: number }[] = [];
 
-// Mock recent activity
-const mockActivity = [
-  { type: 'yield', description: 'Yield accrued: +$42.30', time: '2 hours ago' },
-  { type: 'invoice', description: 'Invoice #1842 funded from pool', time: '5 hours ago' },
-  { type: 'yield', description: 'Invoice #1839 repaid (yield: $156.20)', time: 'Yesterday' },
-  { type: 'rebalance', description: 'Treasury rebalance executed', time: '2 days ago' },
-];
+// Empty activity - will be populated from real events
+const mockActivity: { type: string; description: string; time: string }[] = [];
 
 export default function FinancierDashboard() {
   const { isLoading } = usePoolState();
@@ -59,6 +51,10 @@ export default function FinancierDashboard() {
           </CardHeader>
           {isLoading ? (
             <ChartSkeleton />
+          ) : mockYieldData.length === 0 ? (
+            <div className="h-[200px] flex items-center justify-center">
+              <p className="text-cool-gray text-body-sm">No data available</p>
+            </div>
           ) : (
             <AreaChart
               data={mockYieldData}
@@ -137,28 +133,34 @@ export default function FinancierDashboard() {
             View All
           </Link>
         </CardHeader>
-        <div className="divide-y divide-slate-700">
-          {mockActivity.map((activity, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between py-3"
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    activity.type === 'yield'
-                      ? 'bg-success'
-                      : activity.type === 'invoice'
-                        ? 'bg-primary'
-                        : 'bg-warning'
-                  }`}
-                />
-                <span className="text-body text-white">{activity.description}</span>
+        {mockActivity.length === 0 ? (
+          <div className="py-8 text-center">
+            <p className="text-cool-gray text-body-sm">No activity yet</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-700">
+            {mockActivity.map((activity, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      activity.type === 'yield'
+                        ? 'bg-success'
+                        : activity.type === 'invoice'
+                          ? 'bg-primary'
+                          : 'bg-warning'
+                    }`}
+                  />
+                  <span className="text-body text-white">{activity.description}</span>
+                </div>
+                <span className="text-body-sm text-cool-gray">{activity.time}</span>
               </div>
-              <span className="text-body-sm text-cool-gray">{activity.time}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

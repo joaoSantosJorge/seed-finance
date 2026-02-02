@@ -1,7 +1,7 @@
 'use client';
 
 import { PageHeader } from '@/components/layout';
-import { DepositForm } from '@/components/forms';
+import { UnifiedDepositForm } from '@/components/forms';
 import { useAccount } from 'wagmi';
 import { Card } from '@/components/ui';
 import { ConnectButton } from '@/components/wallet';
@@ -17,8 +17,8 @@ export default function DepositPage() {
   return (
     <div className="max-w-xl mx-auto">
       <PageHeader
-        title="Deposit USDC"
-        description="Add liquidity to the pool and start earning yield"
+        title="Deposit"
+        description="Add liquidity to the pool from any token on any chain"
         backHref="/dashboard/financier"
         backLabel="Back to Dashboard"
       />
@@ -29,7 +29,7 @@ export default function DepositPage() {
           <ConnectButton />
         </Card>
       ) : (
-        <DepositForm onSuccess={handleSuccess} />
+        <UnifiedDepositForm onSuccess={handleSuccess} />
       )}
     </div>
   );

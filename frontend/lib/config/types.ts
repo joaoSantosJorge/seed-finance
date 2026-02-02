@@ -6,6 +6,7 @@ export interface ContractAddresses {
   usdc: Address;
   liquidityPool: Address;
   treasuryManager: Address;
+  lifiReceiver: Address;
 }
 
 export interface EnvironmentConfig {

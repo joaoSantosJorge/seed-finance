@@ -82,15 +82,15 @@ export default function HomePage() {
         <div className="mt-24 text-center">
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto">
             <div>
-              <p className="metric-value">7.42%</p>
+              <p className="metric-value">—%</p>
               <p className="metric-label">Current APY</p>
             </div>
             <div>
-              <p className="metric-value">$2.4M</p>
+              <p className="metric-value">$0.00</p>
               <p className="metric-label">Total Value Locked</p>
             </div>
             <div>
-              <p className="metric-value">42</p>
+              <p className="metric-value">0</p>
               <p className="metric-label">Active Invoices</p>
             </div>
           </div>

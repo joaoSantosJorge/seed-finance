@@ -11,56 +11,18 @@ import { getExplorerTxUrl } from '@/lib/contracts';
 import { useChainId } from 'wagmi';
 import type { TransactionType } from '@/types';
 
-// Mock transactions
-const mockTransactions = [
-  {
-    id: '1',
-    type: 'deposit' as TransactionType,
-    hash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-    timestamp: Date.now() / 1000 - 2 * 60 * 60,
-    assetsAmount: '10000',
-    sharesAmount: '9622.83',
-    sharePrice: '1.0392',
-    description: '+10,000 USDC → 9,622.83 sfUSDC',
-  },
-  {
-    id: '2',
-    type: 'yield_invoice' as TransactionType,
-    hash: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
-    timestamp: Date.now() / 1000 - 24 * 60 * 60,
-    assetsAmount: '156.20',
-    invoiceId: 1842,
-    description: 'Invoice #1842 repaid → +$156.20 yield',
-  },
-  {
-    id: '3',
-    type: 'yield_treasury' as TransactionType,
-    hash: '0x7890abcdef1234567890abcdef1234567890abcdef1234567890abcdef123456',
-    timestamp: Date.now() / 1000 - 2 * 24 * 60 * 60,
-    assetsAmount: '42.30',
-    description: 'USYC harvest → +$42.30',
-  },
-  {
-    id: '4',
-    type: 'withdrawal' as TransactionType,
-    hash: '0xdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abc',
-    timestamp: Date.now() / 1000 - 4 * 24 * 60 * 60,
-    assetsAmount: '5000',
-    sharesAmount: '4811.42',
-    sharePrice: '1.0392',
-    description: '-5,000 USDC ← 4,811.42 sfUSDC burned',
-  },
-  {
-    id: '5',
-    type: 'deposit' as TransactionType,
-    hash: '0x567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234',
-    timestamp: Date.now() / 1000 - 17 * 24 * 60 * 60,
-    assetsAmount: '50000',
-    sharesAmount: '49018.21',
-    sharePrice: '1.0200',
-    description: '+50,000 USDC → 49,018.21 sfUSDC',
-  },
-];
+// Empty transactions - will be populated from real contract events
+const mockTransactions: {
+  id: string;
+  type: TransactionType;
+  hash: string;
+  timestamp: number;
+  assetsAmount: string;
+  sharesAmount?: string;
+  sharePrice?: string;
+  invoiceId?: number;
+  description: string;
+}[] = [];
 
 const transactionIcons: Record<TransactionType, React.ReactNode> = {
   deposit: <ArrowDownToLine className="w-4 h-4" />,
@@ -95,12 +57,12 @@ export default function TransactionsPage() {
     ? mockTransactions
     : mockTransactions.filter((tx) => tx.type === filter);
 
-  // Summary calculations
+  // Summary calculations - defaults to 0 until real data available
   const summary = {
-    totalDeposited: 120528.20,
-    totalWithdrawn: 5000.00,
-    netDeposits: 115528.20,
-    yieldEarned: 4892.30,
+    totalDeposited: 0,
+    totalWithdrawn: 0,
+    netDeposits: 0,
+    yieldEarned: 0,
   };
 
   if (!isConnected) {
@@ -195,7 +157,7 @@ export default function TransactionsPage() {
 
         {filteredTransactions.length === 0 && (
           <div className="p-12 text-center">
-            <p className="text-cool-gray">No transactions found</p>
+            <p className="text-cool-gray">No transactions yet</p>
           </div>
         )}
       </Card>
@@ -241,7 +203,7 @@ export default function TransactionsPage() {
           </div>
           <div>
             <p className="text-body-sm text-cool-gray mb-1">Yield Earned</p>
-            <p className="text-body font-mono text-success">
+            <p className="text-body font-mono text-white">
               {formatCurrency(summary.yieldEarned)}
             </p>
           </div>
