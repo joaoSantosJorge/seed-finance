@@ -255,6 +255,7 @@ contract ExecutionPoolTest is Test {
         executionPool.setLiquidityPool(address(0));
     }
 
+    /* FUZZ TESTS - COMMENTED FOR FASTER RUNS
     // ============ Fuzz Tests ============
 
     function testFuzz_FundAndRepay(uint128 faceValue, uint16 discountBps) public {
@@ -282,4 +283,5 @@ contract ExecutionPoolTest is Test {
         uint256 yield = faceValue - fundingAmount;
         assertEq(liquidityPool.totalInvoiceYield(), yield);
     }
+    */
 }

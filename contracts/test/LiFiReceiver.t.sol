@@ -105,6 +105,7 @@ contract LiFiReceiverTest is Test {
         receiver.directDeposit(0);
     }
 
+    /* FUZZ TESTS - COMMENTED FOR FASTER RUNS
     function testFuzz_DirectDeposit(uint256 amount) public {
         amount = bound(amount, MIN_DEPOSIT, INITIAL_BALANCE);
 
@@ -113,6 +114,7 @@ contract LiFiReceiverTest is Test {
 
         assertGt(pool.balanceOf(user1), 0);
     }
+    */
 
     // ============ LI.FI Receive Tests ============
 

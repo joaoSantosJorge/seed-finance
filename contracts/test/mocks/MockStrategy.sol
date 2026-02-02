@@ -103,4 +103,34 @@ contract MockStrategy is ITreasuryStrategy {
     function setTreasuryManager(address _manager) external {
         treasuryManager = _manager;
     }
+
+    /**
+     * @notice Simulate yield by minting additional tokens
+     * @param yieldBps Yield in basis points (e.g., 5000 = 50%)
+     */
+    function simulateYield(uint256 yieldBps) external {
+        uint256 currentBalance = _asset.balanceOf(address(this));
+        uint256 yieldAmount = (currentBalance * yieldBps) / 10000;
+
+        // We need to mint directly - cast to MockUSDC
+        // This is a test helper
+        (bool success, ) = address(_asset).call(
+            abi.encodeWithSignature("mint(address,uint256)", address(this), yieldAmount)
+        );
+        require(success, "Yield simulation failed");
+    }
+
+    /**
+     * @notice Simulate loss by burning tokens
+     * @param lossBps Loss in basis points (e.g., 5000 = 50%)
+     */
+    function simulateLoss(uint256 lossBps) external {
+        uint256 currentBalance = _asset.balanceOf(address(this));
+        uint256 lossAmount = (currentBalance * lossBps) / 10000;
+
+        // Transfer to zero address to simulate loss (or to a burn address)
+        // Actually just transfer out to simulate loss
+        _asset.safeTransfer(address(0xdead), lossAmount);
+        totalDeposited = totalDeposited > lossAmount ? totalDeposited - lossAmount : 0;
+    }
 }
