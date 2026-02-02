@@ -18,7 +18,7 @@ export function formatUSDC(amount: bigint, showSign = false): string {
 }
 
 /**
- * Format sfUSDC shares (18 decimals) to display string
+ * Format sfUSDC shares (6 decimals, same as underlying USDC) to display string
  */
 export function formatShares(amount: bigint, decimals = 2): string {
   const value = parseFloat(formatUnits(amount, SFUSDC_DECIMALS));
@@ -154,10 +154,10 @@ export function formatRelativeTime(timestamp: number): string {
 
 /**
  * Format share price (1 share = X USDC)
- * Share price is typically close to 1.0 but can vary
+ * Share price is typically close to 1.0 but increases as yield is earned
+ * @param priceInAssets USDC value of 1 sfUSDC share (from convertToAssets(1e6))
  */
 export function formatSharePrice(priceInAssets: bigint): string {
-  // priceInAssets is the USDC value of 1e18 shares (from convertToAssets)
   const price = parseFloat(formatUnits(priceInAssets, USDC_DECIMALS));
   return price.toFixed(4);
 }

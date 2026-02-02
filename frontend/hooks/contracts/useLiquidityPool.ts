@@ -40,7 +40,7 @@ export function useSharePrice() {
   const chainId = useChainId();
   const addresses = getContractAddresses(chainId);
 
-  // Get the asset value of 1e18 shares (1 sfUSDC)
+  // Get the asset value of 1 sfUSDC share (1e6, same decimals as USDC)
   return useReadContract({
     address: addresses.liquidityPool,
     abi: liquidityPoolAbi,

@@ -11,8 +11,8 @@ export function calculateSharesForDeposit(
   totalSupply: bigint
 ): bigint {
   if (totalAssets === 0n) {
-    // First deposit: 1:1 ratio (adjusted for decimal difference)
-    // USDC has 6 decimals, sfUSDC has 18 decimals
+    // First deposit: 1:1 ratio
+    // Both USDC and sfUSDC have 6 decimals (ERC4626 inherits from underlying)
     return depositAmount * 10n ** BigInt(SFUSDC_DECIMALS - USDC_DECIMALS);
   }
   return (depositAmount * totalSupply) / totalAssets;
@@ -52,7 +52,7 @@ export function calculateSharePrice(
   totalSupply: bigint
 ): number {
   if (totalSupply === 0n) return 1.0;
-  // Calculate as if we have 1e18 shares, get USDC value
+  // Calculate value of 1 share (1e6 for 6 decimal sfUSDC)
   const oneShare = 10n ** BigInt(SFUSDC_DECIMALS);
   const priceInAssets = (oneShare * totalAssets) / totalSupply;
   return parseFloat(formatUnits(priceInAssets, USDC_DECIMALS));

@@ -35,4 +35,5 @@ export function getContractAddresses(env: Environment): ContractAddresses {
 }
 
 export const USDC_DECIMALS = 6;
-export const SFUSDC_DECIMALS = 18;
+// sfUSDC shares inherit decimals from underlying asset (USDC) via ERC4626
+export const SFUSDC_DECIMALS = 6;
