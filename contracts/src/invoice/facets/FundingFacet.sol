@@ -1,0 +1,195 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.26;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "../libraries/LibInvoiceStorage.sol";
+
+/**
+ * @title FundingFacet
+ * @notice Handles invoice funding operations
+ * @dev Part of the Invoice Diamond - coordinates with ExecutionPool to fund invoices
+ */
+contract FundingFacet {
+    using SafeERC20 for IERC20;
+    using LibInvoiceStorage for LibInvoiceStorage.Storage;
+
+    // ============ Events ============
+
+    event InvoiceFunded(
+        uint256 indexed invoiceId,
+        address indexed supplier,
+        uint128 fundingAmount,
+        uint128 discount,
+        uint64 fundedAt
+    );
+
+    event FundingRequested(
+        uint256 indexed invoiceId,
+        uint128 amount
+    );
+
+    // ============ Errors ============
+
+    error InvoiceNotFound(uint256 invoiceId);
+    error InvalidInvoiceStatus(uint256 invoiceId, LibInvoiceStorage.InvoiceStatus expected, LibInvoiceStorage.InvoiceStatus actual);
+    error Unauthorized(address caller, string role);
+    error ExecutionPoolNotSet();
+    error InsufficientFunds(uint256 required, uint256 available);
+
+    // ============ External Functions ============
+
+    /**
+     * @notice Request funding for an approved invoice
+     * @dev Only callable by operators. Calculates funding amount and coordinates with ExecutionPool
+     * @param invoiceId The invoice ID to fund
+     */
+    function requestFunding(uint256 invoiceId) external {
+        LibInvoiceStorage.enforceIsOperator();
+
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
+
+        // Validate
+        if (invoice.createdAt == 0) revert InvoiceNotFound(invoiceId);
+        if (invoice.status != LibInvoiceStorage.InvoiceStatus.Approved) {
+            revert InvalidInvoiceStatus(
+                invoiceId,
+                LibInvoiceStorage.InvoiceStatus.Approved,
+                invoice.status
+            );
+        }
+        if (s.executionPool == address(0)) revert ExecutionPoolNotSet();
+
+        // Calculate funding amount
+        uint256 secondsToMaturity = invoice.maturityDate > block.timestamp
+            ? invoice.maturityDate - block.timestamp
+            : 0;
+
+        uint128 fundingAmount = LibInvoiceStorage.calculateFundingAmount(
+            invoice.faceValue,
+            invoice.discountRateBps,
+            secondsToMaturity
+        );
+
+        uint128 discount = invoice.faceValue - fundingAmount;
+
+        // Update invoice state
+        invoice.fundingAmount = fundingAmount;
+        invoice.status = LibInvoiceStorage.InvoiceStatus.Funded;
+        invoice.fundedAt = uint64(block.timestamp);
+
+        // Update stats
+        s.totalFunded += fundingAmount;
+        s.activeInvoiceCount++;
+
+        // Emit funding requested event (ExecutionPool listens to this or is called directly)
+        emit FundingRequested(invoiceId, fundingAmount);
+
+        emit InvoiceFunded(
+            invoiceId,
+            invoice.supplier,
+            fundingAmount,
+            discount,
+            uint64(block.timestamp)
+        );
+    }
+
+    /**
+     * @notice Batch fund multiple approved invoices
+     * @dev Only callable by operators. Skips invoices that aren't in Approved status
+     * @param invoiceIds Array of invoice IDs to fund
+     */
+    function batchFund(uint256[] calldata invoiceIds) external {
+        LibInvoiceStorage.enforceIsOperator();
+
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        if (s.executionPool == address(0)) revert ExecutionPoolNotSet();
+
+        for (uint256 i = 0; i < invoiceIds.length; i++) {
+            uint256 invoiceId = invoiceIds[i];
+            LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
+
+            // Skip if not approved
+            if (invoice.createdAt == 0 || invoice.status != LibInvoiceStorage.InvoiceStatus.Approved) {
+                continue;
+            }
+
+            // Calculate funding amount
+            uint256 secondsToMaturity = invoice.maturityDate > block.timestamp
+                ? invoice.maturityDate - block.timestamp
+                : 0;
+
+            uint128 fundingAmount = LibInvoiceStorage.calculateFundingAmount(
+                invoice.faceValue,
+                invoice.discountRateBps,
+                secondsToMaturity
+            );
+
+            uint128 discount = invoice.faceValue - fundingAmount;
+
+            // Update invoice state
+            invoice.fundingAmount = fundingAmount;
+            invoice.status = LibInvoiceStorage.InvoiceStatus.Funded;
+            invoice.fundedAt = uint64(block.timestamp);
+
+            // Update stats
+            s.totalFunded += fundingAmount;
+            s.activeInvoiceCount++;
+
+            emit FundingRequested(invoiceId, fundingAmount);
+
+            emit InvoiceFunded(
+                invoiceId,
+                invoice.supplier,
+                fundingAmount,
+                discount,
+                uint64(block.timestamp)
+            );
+        }
+    }
+
+    // ============ View Functions ============
+
+    /**
+     * @notice Check if an invoice can be funded
+     * @param invoiceId The invoice ID to check
+     * @return canFund True if invoice can be funded
+     */
+    function canFundInvoice(uint256 invoiceId) external view returns (bool canFund) {
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
+
+        return invoice.createdAt != 0 &&
+               invoice.status == LibInvoiceStorage.InvoiceStatus.Approved &&
+               s.executionPool != address(0);
+    }
+
+    /**
+     * @notice Get the funding amount for an invoice
+     * @param invoiceId The invoice ID
+     * @return amount The funding amount (after discount)
+     */
+    function getFundingAmount(uint256 invoiceId) external view returns (uint128 amount) {
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
+
+        if (invoice.createdAt == 0) revert InvoiceNotFound(invoiceId);
+
+        // If already funded, return stored amount
+        if (invoice.fundingAmount > 0) {
+            return invoice.fundingAmount;
+        }
+
+        // Calculate based on current time
+        uint256 secondsToMaturity = invoice.maturityDate > block.timestamp
+            ? invoice.maturityDate - block.timestamp
+            : 0;
+
+        return LibInvoiceStorage.calculateFundingAmount(
+            invoice.faceValue,
+            invoice.discountRateBps,
+            secondsToMaturity
+        );
+    }
+}

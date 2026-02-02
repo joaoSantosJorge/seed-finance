@@ -9,18 +9,24 @@ const defaults: Record<Environment, ContractAddresses> = {
     liquidityPool: ZERO,
     treasuryManager: ZERO,
     lifiReceiver: ZERO,
+    invoiceDiamond: ZERO,
+    executionPool: ZERO,
   },
   testnet: {
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as Address,
     liquidityPool: ZERO, // Set via env var after deploy
     treasuryManager: ZERO,
     lifiReceiver: ZERO, // Set via env var after deploy
+    invoiceDiamond: ZERO, // Set via env var after deploy
+    executionPool: ZERO, // Set via env var after deploy
   },
   production: {
     usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address,
     liquidityPool: ZERO,
     treasuryManager: ZERO,
     lifiReceiver: ZERO,
+    invoiceDiamond: ZERO,
+    executionPool: ZERO,
   },
 };
 
@@ -37,6 +43,12 @@ export function getContractAddresses(env: Environment): ContractAddresses {
     lifiReceiver:
       (process.env.NEXT_PUBLIC_LIFI_RECEIVER_ADDRESS as Address) ||
       d.lifiReceiver,
+    invoiceDiamond:
+      (process.env.NEXT_PUBLIC_INVOICE_DIAMOND_ADDRESS as Address) ||
+      d.invoiceDiamond,
+    executionPool:
+      (process.env.NEXT_PUBLIC_EXECUTION_POOL_ADDRESS as Address) ||
+      d.executionPool,
   };
 }
 

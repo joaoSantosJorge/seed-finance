@@ -231,4 +231,10 @@ export interface ContractAddresses {
   cctpReceiver: string;
   lifiReceiver: string;
   smartRouter: string;
+  invoiceDiamond?: string;
+  executionPool?: string;
 }
+
+// ============ Invoice Types ============
+
+export * from './invoice';

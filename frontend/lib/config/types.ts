@@ -7,6 +7,8 @@ export interface ContractAddresses {
   liquidityPool: Address;
   treasuryManager: Address;
   lifiReceiver: Address;
+  invoiceDiamond: Address;
+  executionPool: Address;
 }
 
 export interface EnvironmentConfig {
