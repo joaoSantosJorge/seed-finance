@@ -19,18 +19,26 @@ function useTabsContext() {
 }
 
 interface TabsProps {
-  defaultValue: string;
+  defaultValue?: string;
+  value?: string;
   children: ReactNode;
   className?: string;
   onChange?: (value: string) => void;
+  onValueChange?: (value: string) => void;
 }
 
-export function Tabs({ defaultValue, children, className, onChange }: TabsProps) {
-  const [activeTab, setActiveTab] = useState(defaultValue);
+export function Tabs({ defaultValue, value, children, className, onChange, onValueChange }: TabsProps) {
+  const [internalTab, setInternalTab] = useState(defaultValue ?? value ?? '');
+
+  // Support both controlled and uncontrolled modes
+  const activeTab = value ?? internalTab;
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
+    if (value === undefined) {
+      setInternalTab(tab);
+    }
     onChange?.(tab);
+    onValueChange?.(tab);
   };
 
   return (

@@ -79,6 +79,14 @@ export function truncateAddress(address: string, startChars = 6, endChars = 4): 
 }
 
 /**
+ * Format an Ethereum address for display
+ * Alias for truncateAddress for semantic clarity
+ */
+export function formatAddress(address: string, startChars = 6, endChars = 4): string {
+  return truncateAddress(address, startChars, endChars);
+}
+
+/**
  * Truncate a transaction hash
  */
 export function truncateTxHash(hash: string): string {

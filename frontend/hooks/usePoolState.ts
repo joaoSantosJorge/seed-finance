@@ -131,5 +131,11 @@ export function usePoolState() {
     formattedState,
     isLoading,
     isPaused: paused ?? false,
+    // Direct access to common values for convenience
+    totalAssets: poolState?.totalAssets,
+    availableLiquidity: poolState?.availableLiquidity,
+    utilizationRate: poolState?.utilizationRate,
+    totalDeployed: poolState?.totalDeployed,
+    totalInTreasury: poolState?.totalInTreasury,
   };
 }

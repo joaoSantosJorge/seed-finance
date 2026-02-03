@@ -18,7 +18,6 @@ import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { formatUnits, parseUnits, Address, Hex } from 'viem';
 import {
   useCCTPDeposit,
-  useSupportedCCTPChains,
   CCTP_CHAINS,
 } from '@/hooks/cctp';
 import { useCCTPAttestation, useAttestationTimer } from '@/hooks/cctp/useCCTPAttestation';
@@ -61,7 +60,7 @@ const CHAIN_OPTIONS: ChainOption[] = [
 // ============ Component ============
 
 export function CCTPDepositFlow({
-  onSuccess,
+  onSuccess: _onSuccess,
   onError,
   cctpReceiverAddress,
 }: CCTPDepositFlowProps) {
@@ -76,15 +75,12 @@ export function CCTPDepositFlow({
   const [amount, setAmount] = useState('');
   const [error, setError] = useState<Error | null>(null);
   const [burnTxHash, setBurnTxHash] = useState<Hex | null>(null);
-  const [messageHash, setMessageHash] = useState<Hex | null>(null);
+  const [_messageHash, setMessageHash] = useState<Hex | null>(null);
   const [attestationStartTime, setAttestationStartTime] = useState<Date | null>(null);
 
   // CCTP hooks
   const {
-    state: depositState,
-    allowance,
     balance,
-    config,
     approve,
     burn,
     needsApproval,
@@ -337,7 +333,7 @@ export function CCTPDepositFlow({
             </button>
             <button
               onClick={handleContinue}
-              disabled={!parsedAmount || (balance && parsedAmount > balance)}
+              disabled={!parsedAmount || Boolean(balance && parsedAmount > balance)}
               className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {needsApproval(parsedAmount) ? 'Approve & Transfer' : 'Transfer'}
