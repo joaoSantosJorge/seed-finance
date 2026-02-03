@@ -14,13 +14,12 @@ Suppliers, clients dashboard:
 
 
 TODO
-[ ] - check if LI.FI is working
-[ ] - check tests
-[ ] - strategies. Add one more strategy aave? what would it look like?
-[ ] - check solidity tests
-[ ] - create suppliers and clients contracts
-[ ] - check if it is working
+[x] - create suppliers and clients contracts
+[ ] - check if it is working (11_local_anvil_testing)
 [ ] - check interactions
+[ ] - deploy backend and frontend in cloud (keep working with anvil)
+[ ] - create openClaw to test the app????
 [ ] - admin strategies dashboard
 [ ] - admin suppliers and clients dashboard
 [ ] - cash flow window. what does it look like?
+[ ] - echidna and static analysis

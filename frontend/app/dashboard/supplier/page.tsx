@@ -5,7 +5,7 @@ import { FileText, Plus, Clock, CheckCircle, ArrowRight } from 'lucide-react';
 import { Card, CardHeader, CardTitle, MetricSkeleton } from '@/components/ui';
 import { useAccount } from 'wagmi';
 import { useSupplierInvoices, InvoiceStatus } from '@/hooks';
-import { formatCurrency } from '@/lib/formatters';
+import { formatUSDC } from '@/lib/formatters';
 
 export default function SupplierDashboard() {
   const { address } = useAccount();
@@ -80,7 +80,7 @@ export default function SupplierDashboard() {
           {isLoading ? (
             <MetricSkeleton />
           ) : (
-            <p className="text-h2 text-white px-6 pb-4">{formatCurrency(totalFunded, 6)}</p>
+            <p className="text-h2 text-white px-6 pb-4">{formatUSDC(totalFunded)}</p>
           )}
         </Card>
       </div>
@@ -161,7 +161,7 @@ export default function SupplierDashboard() {
                   <div>
                     <p className="text-body text-white">Invoice #{invoice.id.toString()}</p>
                     <p className="text-body-sm text-cool-gray">
-                      {formatCurrency(invoice.faceValue, 6)} USDC
+                      {formatUSDC(invoice.faceValue)}
                     </p>
                   </div>
                 </div>

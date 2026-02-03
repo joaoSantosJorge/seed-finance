@@ -228,3 +228,35 @@ export function useBatchFund() {
     reset,
   };
 }
+
+// ============ Mark Defaulted (Operator) ============
+
+export function useMarkDefaulted() {
+  const chainId = useChainId();
+  const addresses = getContractAddresses(chainId);
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const markDefaulted = (invoiceId: bigint) => {
+    writeContract({
+      address: addresses.invoiceDiamond as Address,
+      abi: invoiceDiamondAbi,
+      functionName: 'markDefaulted',
+      args: [invoiceId],
+    });
+  };
+
+  return {
+    markDefaulted,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    receipt,
+    error,
+    reset,
+  };
+}

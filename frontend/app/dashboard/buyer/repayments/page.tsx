@@ -1,21 +1,275 @@
 'use client';
 
-import { CreditCard, AlertTriangle, Clock, Loader2, CheckCircle } from 'lucide-react';
-import { Card, CardHeader, CardTitle, Button } from '@/components/ui';
+import { CreditCard, AlertTriangle, Clock, CheckCircle, Check, Circle } from 'lucide-react';
+import { Card, CardHeader, CardTitle } from '@/components/ui';
+import { TransactionButton } from '@/components/wallet';
 import { useAccount } from 'wagmi';
-import { useUpcomingRepayments, useProcessRepayment } from '@/hooks';
-import { formatCurrency } from '@/lib/formatters';
-import { useState } from 'react';
+import {
+  useUpcomingRepayments,
+  useProcessRepayment,
+  useUSDCAllowanceForInvoiceDiamond,
+  useApproveUSDC,
+  useUSDCBalance,
+} from '@/hooks';
+import { formatUSDC } from '@/lib/formatters';
+import { useState, useEffect } from 'react';
+
+interface InvoiceRepaymentItemProps {
+  invoice: {
+    id: bigint;
+    faceValue: bigint;
+    maturityDate: bigint;
+  };
+  isOverdue: boolean;
+  daysLabel: string;
+  isUrgent?: boolean;
+  allowance?: bigint;
+  usdcBalance?: bigint;
+  onApprove: (invoiceId: bigint, amount: bigint) => void;
+  onRepay: (invoiceId: bigint) => void;
+  approveState: {
+    isPending: boolean;
+    isConfirming: boolean;
+    isSuccess: boolean;
+    hash?: `0x${string}`;
+    error?: Error | null;
+  };
+  repayState: {
+    isPending: boolean;
+    isConfirming: boolean;
+    isSuccess: boolean;
+    hash?: `0x${string}`;
+    error?: Error | null;
+  };
+  activeInvoiceId: bigint | null;
+}
+
+function InvoiceRepaymentItem({
+  invoice,
+  isOverdue,
+  daysLabel,
+  isUrgent,
+  allowance,
+  usdcBalance,
+  onApprove,
+  onRepay,
+  approveState,
+  repayState,
+  activeInvoiceId,
+}: InvoiceRepaymentItemProps) {
+  const maturityDate = new Date(Number(invoice.maturityDate) * 1000);
+  const isActive = activeInvoiceId === invoice.id;
+  const needsApproval = allowance !== undefined && allowance < invoice.faceValue;
+  const hasBalance = usdcBalance !== undefined && usdcBalance >= invoice.faceValue;
+
+  // Track if this invoice was just approved (for UI flow)
+  const [wasApproved, setWasApproved] = useState(false);
+
+  useEffect(() => {
+    if (isActive && approveState.isSuccess) {
+      setWasApproved(true);
+    }
+  }, [isActive, approveState.isSuccess]);
+
+  // Reset wasApproved when allowance is sufficient
+  useEffect(() => {
+    if (!needsApproval) {
+      setWasApproved(false);
+    }
+  }, [needsApproval]);
+
+  const isApproving = isActive && (approveState.isPending || approveState.isConfirming);
+  const isRepaying = isActive && (repayState.isPending || repayState.isConfirming);
+  const isPaid = isActive && repayState.isSuccess;
+
+  return (
+    <div className="p-4 hover:bg-slate-700/30 transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+            isOverdue ? 'bg-error/10' : isUrgent ? 'bg-warning/10' : 'bg-primary/10'
+          }`}>
+            {isOverdue ? (
+              <AlertTriangle className="w-5 h-5 text-error" />
+            ) : isUrgent ? (
+              <Clock className="w-5 h-5 text-warning" />
+            ) : (
+              <CreditCard className="w-5 h-5 text-primary" />
+            )}
+          </div>
+          <div>
+            <p className="text-body font-medium text-white">
+              Invoice #{invoice.id.toString()}
+            </p>
+            <p className={`text-body-sm ${isOverdue ? 'text-error' : isUrgent ? 'text-warning' : 'text-cool-gray'}`}>
+              {daysLabel}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-body text-white">
+              {formatUSDC(invoice.faceValue)}
+            </p>
+            <p className="text-body-sm text-cool-gray">
+              Due: {maturityDate.toLocaleDateString()}
+            </p>
+          </div>
+
+          {isPaid ? (
+            <div className="flex items-center gap-2 text-success">
+              <CheckCircle className="w-5 h-5" />
+              <span className="text-body-sm">Paid</span>
+            </div>
+          ) : needsApproval && !wasApproved ? (
+            <TransactionButton
+              onClick={() => onApprove(invoice.id, invoice.faceValue)}
+              isPending={approveState.isPending && isActive}
+              isConfirming={approveState.isConfirming && isActive}
+              isSuccess={approveState.isSuccess && isActive}
+              hash={isActive ? approveState.hash : undefined}
+              disabled={isApproving || !hasBalance}
+              pendingText="Confirm..."
+              confirmingText="Approving..."
+              size="sm"
+            >
+              {!hasBalance ? 'Insufficient USDC' : 'Approve USDC'}
+            </TransactionButton>
+          ) : (
+            <TransactionButton
+              onClick={() => onRepay(invoice.id)}
+              isPending={repayState.isPending && isActive}
+              isConfirming={repayState.isConfirming && isActive}
+              isSuccess={repayState.isSuccess && isActive}
+              hash={isActive ? repayState.hash : undefined}
+              disabled={isRepaying || !hasBalance}
+              pendingText="Confirm..."
+              confirmingText="Paying..."
+              variant={isOverdue || isUrgent ? 'primary' : 'secondary'}
+              size="sm"
+            >
+              {!hasBalance ? 'Insufficient USDC' : 'Pay Now'}
+            </TransactionButton>
+          )}
+        </div>
+      </div>
+
+      {/* Transaction Steps - Show when this invoice is active */}
+      {isActive && (needsApproval || isApproving || isRepaying || wasApproved) && (
+        <div className="mt-4 pt-4 border-t border-slate-700">
+          <p className="text-body-sm text-cool-gray mb-3">Transaction Steps:</p>
+          <div className="space-y-2">
+            {/* Step 1: Approve */}
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  !needsApproval || wasApproved
+                    ? 'bg-success'
+                    : 'bg-slate-700'
+                }`}
+              >
+                {!needsApproval || wasApproved ? (
+                  <Check className="w-3 h-3 text-white" />
+                ) : (
+                  <Circle className="w-3 h-3 text-cool-gray" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-body-sm text-white">Approve USDC spending</p>
+              </div>
+              <span className="text-body-sm text-cool-gray">
+                {!needsApproval || wasApproved
+                  ? 'Done'
+                  : approveState.isPending
+                    ? 'Waiting...'
+                    : approveState.isConfirming
+                      ? 'Confirming...'
+                      : 'Pending'}
+              </span>
+            </div>
+
+            {/* Step 2: Pay */}
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  isPaid ? 'bg-success' : 'bg-slate-700'
+                }`}
+              >
+                {isPaid ? (
+                  <Check className="w-3 h-3 text-white" />
+                ) : (
+                  <Circle className="w-3 h-3 text-cool-gray" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="text-body-sm text-white">Process repayment</p>
+              </div>
+              <span className="text-body-sm text-cool-gray">
+                {isPaid
+                  ? 'Done'
+                  : repayState.isPending
+                    ? 'Waiting...'
+                    : repayState.isConfirming
+                      ? 'Confirming...'
+                      : 'Pending'}
+              </span>
+            </div>
+          </div>
+
+          {/* Errors */}
+          {isActive && (approveState.error || repayState.error) && (
+            <p className="mt-2 text-body-sm text-error">
+              {(approveState.error || repayState.error)?.message || 'Transaction failed'}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function BuyerRepaymentsPage() {
   const { address } = useAccount();
   const { data: repaymentInvoices, totalDue, isLoading } = useUpcomingRepayments(address);
-  const { processRepayment, isPending: isRepaying, isConfirming, reset } = useProcessRepayment();
-  const [repayingId, setRepayingId] = useState<bigint | null>(null);
+  const { data: usdcBalance } = useUSDCBalance(address);
+  const { data: allowance, refetch: refetchAllowance } = useUSDCAllowanceForInvoiceDiamond(address);
 
-  const handleRepay = async (invoiceId: bigint) => {
-    setRepayingId(invoiceId);
-    reset();
+  const {
+    approveInvoiceDiamond,
+    hash: approveHash,
+    isPending: approvePending,
+    isConfirming: approveConfirming,
+    isSuccess: approveSuccess,
+    error: approveError,
+  } = useApproveUSDC();
+
+  const {
+    processRepayment,
+    hash: repayHash,
+    isPending: repayPending,
+    isConfirming: repayConfirming,
+    isSuccess: repaySuccess,
+    error: repayError,
+    reset: resetRepay,
+  } = useProcessRepayment();
+
+  const [activeInvoiceId, setActiveInvoiceId] = useState<bigint | null>(null);
+
+  // Refetch allowance after approval success
+  useEffect(() => {
+    if (approveSuccess) {
+      refetchAllowance();
+    }
+  }, [approveSuccess, refetchAllowance]);
+
+  const handleApprove = (invoiceId: bigint, amount: bigint) => {
+    setActiveInvoiceId(invoiceId);
+    approveInvoiceDiamond(amount);
+  };
+
+  const handleRepay = (invoiceId: bigint) => {
+    setActiveInvoiceId(invoiceId);
+    resetRepay();
     processRepayment(invoiceId);
   };
 
@@ -30,6 +284,22 @@ export default function BuyerRepaymentsPage() {
     const maturity = new Date(Number(inv.maturityDate) * 1000);
     return maturity >= now;
   }) ?? [];
+
+  const approveState = {
+    isPending: approvePending,
+    isConfirming: approveConfirming,
+    isSuccess: approveSuccess,
+    hash: approveHash,
+    error: approveError,
+  };
+
+  const repayState = {
+    isPending: repayPending,
+    isConfirming: repayConfirming,
+    isSuccess: repaySuccess,
+    hash: repayHash,
+    error: repayError,
+  };
 
   return (
     <div className="space-y-6">
@@ -46,7 +316,7 @@ export default function BuyerRepaymentsPage() {
         <Card>
           <div className="p-6">
             <p className="text-body-sm text-cool-gray">Total Due</p>
-            <p className="text-h2 text-white mt-2">{formatCurrency(totalDue, 6)}</p>
+            <p className="text-h2 text-white mt-2">{formatUSDC(totalDue)}</p>
             <p className="text-body-sm text-cool-gray mt-1">USDC</p>
           </div>
         </Card>
@@ -85,54 +355,21 @@ export default function BuyerRepaymentsPage() {
               const daysOverdue = Math.abs(
                 Math.ceil((maturityDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
               );
-              const isProcessing = repayingId === invoice.id && (isRepaying || isConfirming);
 
               return (
-                <div
+                <InvoiceRepaymentItem
                   key={invoice.id.toString()}
-                  className="p-4 hover:bg-slate-700/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-error/10 rounded-lg flex items-center justify-center">
-                        <AlertTriangle className="w-5 h-5 text-error" />
-                      </div>
-                      <div>
-                        <p className="text-body font-medium text-white">
-                          Invoice #{invoice.id.toString()}
-                        </p>
-                        <p className="text-body-sm text-error">
-                          {daysOverdue} days overdue
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-body text-white">
-                          {formatCurrency(invoice.faceValue, 6)} USDC
-                        </p>
-                        <p className="text-body-sm text-cool-gray">
-                          Due: {maturityDate.toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleRepay(invoice.id)}
-                        disabled={isProcessing}
-                      >
-                        {isProcessing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {isRepaying ? 'Confirm...' : 'Paying...'}
-                          </>
-                        ) : (
-                          'Pay Now'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  invoice={invoice}
+                  isOverdue={true}
+                  daysLabel={`${daysOverdue} days overdue`}
+                  allowance={allowance}
+                  usdcBalance={usdcBalance}
+                  onApprove={handleApprove}
+                  onRepay={handleRepay}
+                  approveState={approveState}
+                  repayState={repayState}
+                  activeInvoiceId={activeInvoiceId}
+                />
               );
             })}
           </div>
@@ -166,61 +403,23 @@ export default function BuyerRepaymentsPage() {
               const daysUntil = Math.ceil(
                 (maturityDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
               );
-              const isProcessing = repayingId === invoice.id && (isRepaying || isConfirming);
               const isUrgent = daysUntil <= 3;
 
               return (
-                <div
+                <InvoiceRepaymentItem
                   key={invoice.id.toString()}
-                  className="p-4 hover:bg-slate-700/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        isUrgent ? 'bg-warning/10' : 'bg-primary/10'
-                      }`}>
-                        {isUrgent ? (
-                          <Clock className="w-5 h-5 text-warning" />
-                        ) : (
-                          <CreditCard className="w-5 h-5 text-primary" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-body font-medium text-white">
-                          Invoice #{invoice.id.toString()}
-                        </p>
-                        <p className={`text-body-sm ${isUrgent ? 'text-warning' : 'text-cool-gray'}`}>
-                          Due in {daysUntil} days
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-body text-white">
-                          {formatCurrency(invoice.faceValue, 6)} USDC
-                        </p>
-                        <p className="text-body-sm text-cool-gray">
-                          Due: {maturityDate.toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Button
-                        variant={isUrgent ? 'primary' : 'secondary'}
-                        size="sm"
-                        onClick={() => handleRepay(invoice.id)}
-                        disabled={isProcessing}
-                      >
-                        {isProcessing ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {isRepaying ? 'Confirm...' : 'Paying...'}
-                          </>
-                        ) : (
-                          'Pay Now'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  invoice={invoice}
+                  isOverdue={false}
+                  daysLabel={`Due in ${daysUntil} days`}
+                  isUrgent={isUrgent}
+                  allowance={allowance}
+                  usdcBalance={usdcBalance}
+                  onApprove={handleApprove}
+                  onRepay={handleRepay}
+                  approveState={approveState}
+                  repayState={repayState}
+                  activeInvoiceId={activeInvoiceId}
+                />
               );
             })}
           </div>

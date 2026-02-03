@@ -5,7 +5,7 @@ import { FileCheck, Clock, AlertTriangle, CreditCard, ArrowRight } from 'lucide-
 import { Card, CardHeader, CardTitle, MetricSkeleton } from '@/components/ui';
 import { useAccount } from 'wagmi';
 import { usePendingApprovals, useUpcomingRepayments, useBuyerInvoices } from '@/hooks';
-import { formatCurrency } from '@/lib/formatters';
+import { formatUSDC } from '@/lib/formatters';
 
 export default function BuyerDashboard() {
   const { address } = useAccount();
@@ -62,7 +62,7 @@ export default function BuyerDashboard() {
           {isLoading ? (
             <MetricSkeleton />
           ) : (
-            <p className="text-h2 text-white px-6 pb-4">{formatCurrency(totalDue, 6)}</p>
+            <p className="text-h2 text-white px-6 pb-4">{formatUSDC(totalDue)}</p>
           )}
         </Card>
 
@@ -171,7 +171,7 @@ export default function BuyerDashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-body text-white">{formatCurrency(invoice.faceValue, 6)}</p>
+                  <p className="text-body text-white">{formatUSDC(invoice.faceValue)}</p>
                   <p className="text-body-sm text-warning">Pending</p>
                 </div>
               </Link>
@@ -231,7 +231,7 @@ export default function BuyerDashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-body text-white">{formatCurrency(invoice.faceValue, 6)}</p>
+                    <p className="text-body text-white">{formatUSDC(invoice.faceValue)}</p>
                     <p className={`text-body-sm ${isOverdue ? 'text-error' : 'text-cool-gray'}`}>
                       {maturityDate.toLocaleDateString()}
                     </p>

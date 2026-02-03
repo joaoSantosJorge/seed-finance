@@ -5,7 +5,7 @@ import { FileCheck, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, Button } from '@/components/ui';
 import { useAccount } from 'wagmi';
 import { usePendingApprovals, useApproveInvoice } from '@/hooks';
-import { formatCurrency } from '@/lib/formatters';
+import { formatUSDC } from '@/lib/formatters';
 import { useState } from 'react';
 
 export default function BuyerInvoicesPage() {
@@ -94,7 +94,7 @@ export default function BuyerInvoicesPage() {
                           <div>
                             <span className="text-body-sm text-cool-gray">Face Value</span>
                             <p className="text-body text-white">
-                              {formatCurrency(invoice.faceValue, 6)} USDC
+                              {formatUSDC(invoice.faceValue)}
                             </p>
                           </div>
                           <div>

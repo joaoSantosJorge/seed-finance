@@ -5,7 +5,7 @@ import { Plus, FileText, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, Input, Button, Badge } from '@/components/ui';
 import { useAccount } from 'wagmi';
 import { useSupplierInvoices, InvoiceStatus, InvoiceStatusLabels } from '@/hooks';
-import { formatCurrency } from '@/lib/formatters';
+import { formatUSDC } from '@/lib/formatters';
 import { useState } from 'react';
 
 export default function SupplierInvoicesPage() {
@@ -152,13 +152,13 @@ export default function SupplierInvoicesPage() {
                       </td>
                       <td className="p-4 text-right">
                         <span className="text-white text-body">
-                          {formatCurrency(invoice.faceValue, 6)}
+                          {formatUSDC(invoice.faceValue)}
                         </span>
                       </td>
                       <td className="p-4 text-right">
                         <span className="text-success text-body">
                           {invoice.fundingAmount > 0n
-                            ? formatCurrency(invoice.fundingAmount, 6)
+                            ? formatUSDC(invoice.fundingAmount)
                             : '-'}
                         </span>
                       </td>

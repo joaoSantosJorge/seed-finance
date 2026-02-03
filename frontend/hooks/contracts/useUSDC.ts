@@ -56,12 +56,28 @@ export function useUSDCAllowanceForPool(owner?: Address) {
   });
 }
 
+export function useUSDCAllowanceForInvoiceDiamond(owner?: Address) {
+  const chainId = useChainId();
+  const addresses = getContractAddresses(chainId);
+
+  return useReadContract({
+    address: addresses.usdc,
+    abi: erc20Abi,
+    functionName: 'allowance',
+    args: owner ? [owner, addresses.invoiceDiamond] : undefined,
+    query: {
+      enabled: !!owner && !!addresses.invoiceDiamond,
+      refetchInterval: 15000,
+    },
+  });
+}
+
 // ============ Write Functions ============
 
 export function useApproveUSDC() {
   const chainId = useChainId();
   const addresses = getContractAddresses(chainId);
-  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
 
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
     hash,
@@ -80,13 +96,19 @@ export function useApproveUSDC() {
     approve(addresses.liquidityPool, amount);
   };
 
+  const approveInvoiceDiamond = (amount: bigint) => {
+    approve(addresses.invoiceDiamond, amount);
+  };
+
   return {
     approve,
     approvePool,
+    approveInvoiceDiamond,
     hash,
     isPending,
     isConfirming,
     isSuccess,
     error,
+    reset,
   };
 }
