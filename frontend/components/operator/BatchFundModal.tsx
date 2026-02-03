@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Modal, ModalFooter } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { useFundInvoice } from '@/hooks/operator/useExecutionPool';
+import { useCompleteFunding } from '@/hooks/operator/useExecutionPool';
 import { type Invoice, InvoiceStatus } from '@/hooks/invoice/useInvoice';
 import { usePoolState } from '@/hooks';
 import { formatCurrency, formatAddress } from '@/lib/formatters';
@@ -33,15 +33,15 @@ export function BatchFundModal({ isOpen, onClose, invoices, onSuccess }: BatchFu
   const [isBatchComplete, setIsBatchComplete] = useState(false);
 
   const {
-    fundInvoice,
+    completeFunding,
     isSuccess,
     error,
     reset,
-  } = useFundInvoice();
+  } = useCompleteFunding();
 
-  // Filter to only approved invoices
+  // Filter to only funding-approved invoices (ready to fund)
   const approvedInvoices = useMemo(() => {
-    return invoices.filter((inv) => inv.status === InvoiceStatus.Approved);
+    return invoices.filter((inv) => inv.status === InvoiceStatus.FundingApproved);
   }, [invoices]);
 
   // Calculate total funding needed
@@ -96,13 +96,13 @@ export function BatchFundModal({ isOpen, onClose, invoices, onSuccess }: BatchFu
       (Number(invoice.faceValue) * invoice.discountRateBps * daysToMaturity) / (10000 * 365);
     const fundingAmt = BigInt(Math.floor(Number(invoice.faceValue) - discountAmount));
 
-    fundInvoice(
+    completeFunding(
       invoice.id,
       invoice.supplier as Address,
       fundingAmt,
       invoice.faceValue
     );
-  }, [approvedInvoices, fundInvoice]);
+  }, [approvedInvoices, completeFunding]);
 
   // Handle funding completion for current invoice
   useEffect(() => {

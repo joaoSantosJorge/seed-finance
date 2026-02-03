@@ -68,11 +68,14 @@ contract FundingFacetTest is Test {
         });
 
         // FundingFacet selectors
-        bytes4[] memory fundingSelectors = new bytes4[](4);
-        fundingSelectors[0] = FundingFacet.requestFunding.selector;
-        fundingSelectors[1] = FundingFacet.batchFund.selector;
-        fundingSelectors[2] = FundingFacet.canFundInvoice.selector;
-        fundingSelectors[3] = FundingFacet.getFundingAmount.selector;
+        bytes4[] memory fundingSelectors = new bytes4[](7);
+        fundingSelectors[0] = FundingFacet.approveFunding.selector;
+        fundingSelectors[1] = FundingFacet.batchApproveFunding.selector;
+        fundingSelectors[2] = FundingFacet.canApproveFunding.selector;
+        fundingSelectors[3] = FundingFacet.requestFunding.selector;
+        fundingSelectors[4] = FundingFacet.batchFund.selector;
+        fundingSelectors[5] = FundingFacet.canFundInvoice.selector;
+        fundingSelectors[6] = FundingFacet.getFundingAmount.selector;
 
         cuts[1] = InvoiceDiamond.FacetCut({
             facetAddress: address(fundingFacet),
@@ -170,6 +173,13 @@ contract FundingFacetTest is Test {
         InvoiceFacet(address(diamond)).approveInvoice(invoiceId);
     }
 
+    function _createFundingApprovedInvoice() internal returns (uint256 invoiceId) {
+        invoiceId = _createApprovedInvoice();
+
+        vm.prank(operator);
+        FundingFacet(address(diamond)).approveFunding(invoiceId);
+    }
+
     function _createPendingInvoice() internal returns (uint256 invoiceId) {
         uint64 maturityDate = uint64(block.timestamp + MATURITY_30_DAYS);
 
@@ -184,10 +194,123 @@ contract FundingFacetTest is Test {
         );
     }
 
+    // ============ approveFunding Tests ============
+
+    function test_ApproveFunding_Success() public {
+        uint256 invoiceId = _createApprovedInvoice();
+
+        vm.prank(operator);
+        FundingFacet(address(diamond)).approveFunding(invoiceId);
+
+        // Verify invoice is now FundingApproved
+        IInvoiceDiamond.InvoiceView memory invoice = ViewFacet(address(diamond)).getInvoice(invoiceId);
+        assertEq(uint8(invoice.status), uint8(LibInvoiceStorage.InvoiceStatus.FundingApproved));
+    }
+
+    function test_ApproveFunding_RevertNotOperator() public {
+        uint256 invoiceId = _createApprovedInvoice();
+
+        vm.prank(randomAddress());
+        vm.expectRevert("LibInvoiceStorage: not operator");
+        FundingFacet(address(diamond)).approveFunding(invoiceId);
+    }
+
+    function test_ApproveFunding_RevertNotApproved() public {
+        uint256 invoiceId = _createPendingInvoice();
+
+        vm.prank(operator);
+        vm.expectRevert(abi.encodeWithSelector(
+            FundingFacet.InvalidInvoiceStatus.selector,
+            invoiceId,
+            LibInvoiceStorage.InvoiceStatus.Approved,
+            LibInvoiceStorage.InvoiceStatus.Pending
+        ));
+        FundingFacet(address(diamond)).approveFunding(invoiceId);
+    }
+
+    function test_ApproveFunding_RevertInvoiceNotFound() public {
+        vm.prank(operator);
+        vm.expectRevert(abi.encodeWithSelector(
+            FundingFacet.InvoiceNotFound.selector,
+            999
+        ));
+        FundingFacet(address(diamond)).approveFunding(999);
+    }
+
+    // ============ batchApproveFunding Tests ============
+
+    function test_BatchApproveFunding_Success() public {
+        uint256 id1 = _createApprovedInvoice();
+
+        uint64 maturityDate = uint64(block.timestamp + MATURITY_30_DAYS);
+        vm.prank(supplier);
+        uint256 id2 = InvoiceFacet(address(diamond)).createInvoice(
+            buyer, FACE_VALUE * 2, DISCOUNT_RATE, maturityDate, bytes32("QmHash2"), bytes32("INV-002")
+        );
+        vm.prank(buyer);
+        InvoiceFacet(address(diamond)).approveInvoice(id2);
+
+        uint256[] memory invoiceIds = new uint256[](2);
+        invoiceIds[0] = id1;
+        invoiceIds[1] = id2;
+
+        vm.prank(operator);
+        FundingFacet(address(diamond)).batchApproveFunding(invoiceIds);
+
+        // Both should be FundingApproved
+        IInvoiceDiamond.InvoiceView memory invoice1 = ViewFacet(address(diamond)).getInvoice(id1);
+        IInvoiceDiamond.InvoiceView memory invoice2 = ViewFacet(address(diamond)).getInvoice(id2);
+
+        assertEq(uint8(invoice1.status), uint8(LibInvoiceStorage.InvoiceStatus.FundingApproved));
+        assertEq(uint8(invoice2.status), uint8(LibInvoiceStorage.InvoiceStatus.FundingApproved));
+    }
+
+    function test_BatchApproveFunding_SkipsNonApproved() public {
+        uint256 approvedId = _createApprovedInvoice();
+        uint256 pendingId = _createPendingInvoice();
+
+        uint256[] memory invoiceIds = new uint256[](2);
+        invoiceIds[0] = approvedId;
+        invoiceIds[1] = pendingId;
+
+        vm.prank(operator);
+        FundingFacet(address(diamond)).batchApproveFunding(invoiceIds);
+
+        // Only approved should be FundingApproved
+        IInvoiceDiamond.InvoiceView memory approvedInvoice = ViewFacet(address(diamond)).getInvoice(approvedId);
+        IInvoiceDiamond.InvoiceView memory pendingInvoice = ViewFacet(address(diamond)).getInvoice(pendingId);
+
+        assertEq(uint8(approvedInvoice.status), uint8(LibInvoiceStorage.InvoiceStatus.FundingApproved));
+        assertEq(uint8(pendingInvoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Pending));
+    }
+
+    // ============ canApproveFunding Tests ============
+
+    function test_CanApproveFunding_TrueForApproved() public {
+        uint256 invoiceId = _createApprovedInvoice();
+
+        bool canApprove = FundingFacet(address(diamond)).canApproveFunding(invoiceId);
+        assertTrue(canApprove);
+    }
+
+    function test_CanApproveFunding_FalseForPending() public {
+        uint256 invoiceId = _createPendingInvoice();
+
+        bool canApprove = FundingFacet(address(diamond)).canApproveFunding(invoiceId);
+        assertFalse(canApprove);
+    }
+
+    function test_CanApproveFunding_FalseForFundingApproved() public {
+        uint256 invoiceId = _createFundingApprovedInvoice();
+
+        bool canApprove = FundingFacet(address(diamond)).canApproveFunding(invoiceId);
+        assertFalse(canApprove);
+    }
+
     // ============ requestFunding Tests ============
 
     function test_RequestFunding_Success() public {
-        uint256 invoiceId = _createApprovedInvoice();
+        uint256 invoiceId = _createFundingApprovedInvoice();
 
         vm.prank(operator);
         FundingFacet(address(diamond)).requestFunding(invoiceId);
@@ -200,7 +323,7 @@ contract FundingFacetTest is Test {
     }
 
     function test_RequestFunding_RevertNotOperator() public {
-        uint256 invoiceId = _createApprovedInvoice();
+        uint256 invoiceId = _createFundingApprovedInvoice();
 
         vm.prank(randomAddress());
         vm.expectRevert("LibInvoiceStorage: not operator");
@@ -216,21 +339,21 @@ contract FundingFacetTest is Test {
         FundingFacet(address(diamond)).requestFunding(999);
     }
 
-    function test_RequestFunding_RevertNotApproved() public {
-        uint256 invoiceId = _createPendingInvoice();
+    function test_RequestFunding_RevertNotFundingApproved() public {
+        uint256 invoiceId = _createApprovedInvoice();
 
         vm.prank(operator);
         vm.expectRevert(abi.encodeWithSelector(
             FundingFacet.InvalidInvoiceStatus.selector,
             invoiceId,
-            LibInvoiceStorage.InvoiceStatus.Approved,
-            LibInvoiceStorage.InvoiceStatus.Pending
+            LibInvoiceStorage.InvoiceStatus.FundingApproved,
+            LibInvoiceStorage.InvoiceStatus.Approved
         ));
         FundingFacet(address(diamond)).requestFunding(invoiceId);
     }
 
     function test_RequestFunding_RevertAlreadyFunded() public {
-        uint256 invoiceId = _createApprovedInvoice();
+        uint256 invoiceId = _createFundingApprovedInvoice();
 
         vm.prank(operator);
         FundingFacet(address(diamond)).requestFunding(invoiceId);
@@ -240,7 +363,7 @@ contract FundingFacetTest is Test {
         vm.expectRevert(abi.encodeWithSelector(
             FundingFacet.InvalidInvoiceStatus.selector,
             invoiceId,
-            LibInvoiceStorage.InvoiceStatus.Approved,
+            LibInvoiceStorage.InvoiceStatus.FundingApproved,
             LibInvoiceStorage.InvoiceStatus.Funded
         ));
         FundingFacet(address(diamond)).requestFunding(invoiceId);
@@ -259,8 +382,9 @@ contract FundingFacetTest is Test {
             functionSelectors: invoiceSelectors
         });
 
-        bytes4[] memory fundingSelectors = new bytes4[](1);
-        fundingSelectors[0] = FundingFacet.requestFunding.selector;
+        bytes4[] memory fundingSelectors = new bytes4[](2);
+        fundingSelectors[0] = FundingFacet.approveFunding.selector;
+        fundingSelectors[1] = FundingFacet.requestFunding.selector;
         cuts[1] = InvoiceDiamond.FacetCut({
             facetAddress: address(fundingFacet),
             action: InvoiceDiamond.FacetCutAction.Add,
@@ -281,7 +405,7 @@ contract FundingFacetTest is Test {
 
         AdminFacet(address(newDiamond)).setOperator(operator, true);
 
-        // Create and approve invoice
+        // Create, approve, and funding-approve invoice
         uint64 maturityDate = uint64(block.timestamp + MATURITY_30_DAYS);
         vm.prank(supplier);
         uint256 invoiceId = InvoiceFacet(address(newDiamond)).createInvoice(
@@ -291,6 +415,9 @@ contract FundingFacetTest is Test {
         vm.prank(buyer);
         InvoiceFacet(address(newDiamond)).approveInvoice(invoiceId);
 
+        vm.prank(operator);
+        FundingFacet(address(newDiamond)).approveFunding(invoiceId);
+
         // Try to fund without execution pool set
         vm.prank(operator);
         vm.expectRevert(FundingFacet.ExecutionPoolNotSet.selector);
@@ -298,7 +425,7 @@ contract FundingFacetTest is Test {
     }
 
     function test_RequestFunding_UpdatesStats() public {
-        uint256 invoiceId = _createApprovedInvoice();
+        uint256 invoiceId = _createFundingApprovedInvoice();
 
         (uint256 totalFundedBefore,, uint256 activeCountBefore,) = ViewFacet(address(diamond)).getStats();
 
@@ -311,11 +438,50 @@ contract FundingFacetTest is Test {
         assertEq(activeCountAfter, activeCountBefore + 1);
     }
 
+    function test_FullFlow_WithFundingApproval() public {
+        // Create invoice
+        uint64 maturityDate = uint64(block.timestamp + MATURITY_30_DAYS);
+        vm.prank(supplier);
+        uint256 invoiceId = InvoiceFacet(address(diamond)).createInvoice(
+            buyer, FACE_VALUE, DISCOUNT_RATE, maturityDate, bytes32("QmHash"), bytes32("INV-FLOW")
+        );
+
+        // Verify Pending status
+        IInvoiceDiamond.InvoiceView memory invoice = ViewFacet(address(diamond)).getInvoice(invoiceId);
+        assertEq(uint8(invoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Pending));
+
+        // Buyer approves
+        vm.prank(buyer);
+        InvoiceFacet(address(diamond)).approveInvoice(invoiceId);
+
+        // Verify Approved status
+        invoice = ViewFacet(address(diamond)).getInvoice(invoiceId);
+        assertEq(uint8(invoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Approved));
+
+        // Operator approves funding
+        vm.prank(operator);
+        FundingFacet(address(diamond)).approveFunding(invoiceId);
+
+        // Verify FundingApproved status
+        invoice = ViewFacet(address(diamond)).getInvoice(invoiceId);
+        assertEq(uint8(invoice.status), uint8(LibInvoiceStorage.InvoiceStatus.FundingApproved));
+
+        // Operator funds invoice
+        vm.prank(operator);
+        FundingFacet(address(diamond)).requestFunding(invoiceId);
+
+        // Verify Funded status
+        invoice = ViewFacet(address(diamond)).getInvoice(invoiceId);
+        assertEq(uint8(invoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Funded));
+        assertGt(invoice.fundingAmount, 0);
+        assertGt(invoice.fundedAt, 0);
+    }
+
     // ============ batchFund Tests ============
 
     function test_BatchFund_Success() public {
-        // Create multiple approved invoices
-        uint256 id1 = _createApprovedInvoice();
+        // Create multiple funding-approved invoices
+        uint256 id1 = _createFundingApprovedInvoice();
 
         uint64 maturityDate = uint64(block.timestamp + MATURITY_30_DAYS);
         vm.prank(supplier);
@@ -324,6 +490,8 @@ contract FundingFacetTest is Test {
         );
         vm.prank(buyer);
         InvoiceFacet(address(diamond)).approveInvoice(id2);
+        vm.prank(operator);
+        FundingFacet(address(diamond)).approveFunding(id2);
 
         uint256[] memory invoiceIds = new uint256[](2);
         invoiceIds[0] = id1;
@@ -340,37 +508,37 @@ contract FundingFacetTest is Test {
         assertEq(uint8(invoice2.status), uint8(LibInvoiceStorage.InvoiceStatus.Funded));
     }
 
-    function test_BatchFund_SkipsNonApproved() public {
+    function test_BatchFund_SkipsNonFundingApproved() public {
+        uint256 fundingApprovedId = _createFundingApprovedInvoice();
         uint256 approvedId = _createApprovedInvoice();
-        uint256 pendingId = _createPendingInvoice();
 
         uint256[] memory invoiceIds = new uint256[](2);
-        invoiceIds[0] = approvedId;
-        invoiceIds[1] = pendingId;
+        invoiceIds[0] = fundingApprovedId;
+        invoiceIds[1] = approvedId;
 
         vm.prank(operator);
         FundingFacet(address(diamond)).batchFund(invoiceIds);
 
-        // Only approved should be funded
+        // Only funding-approved should be funded
+        IInvoiceDiamond.InvoiceView memory fundingApprovedInvoice = ViewFacet(address(diamond)).getInvoice(fundingApprovedId);
         IInvoiceDiamond.InvoiceView memory approvedInvoice = ViewFacet(address(diamond)).getInvoice(approvedId);
-        IInvoiceDiamond.InvoiceView memory pendingInvoice = ViewFacet(address(diamond)).getInvoice(pendingId);
 
-        assertEq(uint8(approvedInvoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Funded));
-        assertEq(uint8(pendingInvoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Pending));
+        assertEq(uint8(fundingApprovedInvoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Funded));
+        assertEq(uint8(approvedInvoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Approved));
     }
 
     function test_BatchFund_SkipsNonExistent() public {
-        uint256 approvedId = _createApprovedInvoice();
+        uint256 fundingApprovedId = _createFundingApprovedInvoice();
 
         uint256[] memory invoiceIds = new uint256[](2);
-        invoiceIds[0] = approvedId;
+        invoiceIds[0] = fundingApprovedId;
         invoiceIds[1] = 999; // Non-existent
 
         vm.prank(operator);
         FundingFacet(address(diamond)).batchFund(invoiceIds);
 
-        // Approved should be funded, no revert for non-existent
-        IInvoiceDiamond.InvoiceView memory invoice = ViewFacet(address(diamond)).getInvoice(approvedId);
+        // Funding-approved should be funded, no revert for non-existent
+        IInvoiceDiamond.InvoiceView memory invoice = ViewFacet(address(diamond)).getInvoice(fundingApprovedId);
         assertEq(uint8(invoice.status), uint8(LibInvoiceStorage.InvoiceStatus.Funded));
     }
 
@@ -428,11 +596,18 @@ contract FundingFacetTest is Test {
 
     // ============ canFundInvoice Tests ============
 
-    function test_CanFundInvoice_TrueForApproved() public {
-        uint256 invoiceId = _createApprovedInvoice();
+    function test_CanFundInvoice_TrueForFundingApproved() public {
+        uint256 invoiceId = _createFundingApprovedInvoice();
 
         bool canFund = FundingFacet(address(diamond)).canFundInvoice(invoiceId);
         assertTrue(canFund);
+    }
+
+    function test_CanFundInvoice_FalseForApproved() public {
+        uint256 invoiceId = _createApprovedInvoice();
+
+        bool canFund = FundingFacet(address(diamond)).canFundInvoice(invoiceId);
+        assertFalse(canFund);
     }
 
     function test_CanFundInvoice_FalseForPending() public {
@@ -448,7 +623,7 @@ contract FundingFacetTest is Test {
     }
 
     function test_CanFundInvoice_FalseForFunded() public {
-        uint256 invoiceId = _createApprovedInvoice();
+        uint256 invoiceId = _createFundingApprovedInvoice();
 
         vm.prank(operator);
         FundingFacet(address(diamond)).requestFunding(invoiceId);
@@ -470,7 +645,7 @@ contract FundingFacetTest is Test {
     }
 
     function test_GetFundingAmount_ReturnsStoredAfterFunding() public {
-        uint256 invoiceId = _createApprovedInvoice();
+        uint256 invoiceId = _createFundingApprovedInvoice();
 
         uint128 fundingBefore = FundingFacet(address(diamond)).getFundingAmount(invoiceId);
 

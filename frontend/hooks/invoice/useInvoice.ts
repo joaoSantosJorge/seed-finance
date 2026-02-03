@@ -11,15 +11,17 @@ import { getContractAddresses, USDC_DECIMALS } from '@/lib/contracts';
 export enum InvoiceStatus {
   Pending = 0,
   Approved = 1,
-  Funded = 2,
-  Paid = 3,
-  Cancelled = 4,
-  Defaulted = 5,
+  FundingApproved = 2,
+  Funded = 3,
+  Paid = 4,
+  Cancelled = 5,
+  Defaulted = 6,
 }
 
 export const InvoiceStatusLabels: Record<InvoiceStatus, string> = {
   [InvoiceStatus.Pending]: 'Pending Approval',
-  [InvoiceStatus.Approved]: 'Approved',
+  [InvoiceStatus.Approved]: 'Awaiting Funding Approval',
+  [InvoiceStatus.FundingApproved]: 'Ready to Fund',
   [InvoiceStatus.Funded]: 'Funded',
   [InvoiceStatus.Paid]: 'Paid',
   [InvoiceStatus.Cancelled]: 'Cancelled',

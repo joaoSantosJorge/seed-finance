@@ -16,6 +16,7 @@ import {
   Banknote,
   CheckSquare,
   Square,
+  CheckCircle,
 } from 'lucide-react';
 
 interface InvoiceTableProps {
@@ -247,6 +248,15 @@ export function InvoiceTable({
                       <Eye className="w-4 h-4" />
                     </Link>
                     {invoice.status === InvoiceStatus.Approved && (
+                      <Link
+                        href={`/dashboard/operator/invoices/${invoice.id.toString()}?action=approve`}
+                        className="p-2 text-blue-400 hover:text-white transition-colors"
+                        title="Approve Funding"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </Link>
+                    )}
+                    {invoice.status === InvoiceStatus.FundingApproved && (
                       <Link
                         href={`/dashboard/operator/invoices/${invoice.id.toString()}?action=fund`}
                         className="p-2 text-[var(--text-primary)] hover:text-white transition-colors"

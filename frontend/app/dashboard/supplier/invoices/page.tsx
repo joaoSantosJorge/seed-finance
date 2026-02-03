@@ -3,16 +3,24 @@
 import Link from 'next/link';
 import { Plus, FileText, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, Input, Button, Badge } from '@/components/ui';
+import { RequestFundingButton } from '@/components/supplier/RequestFundingButton';
 import { useAccount } from 'wagmi';
 import { useSupplierInvoices, InvoiceStatus, InvoiceStatusLabels } from '@/hooks';
 import { formatUSDC } from '@/lib/formatters';
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function SupplierInvoicesPage() {
   const { address } = useAccount();
-  const { data: invoices, isLoading } = useSupplierInvoices(address);
+  const { data: invoices, isLoading, refetch } = useSupplierInvoices(address);
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const queryClient = useQueryClient();
+
+  const handleFundingSuccess = () => {
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ['poolState'] });
+  };
 
   // Filter invoices
   const filteredInvoices = invoices?.filter((inv) => {
@@ -55,7 +63,7 @@ export default function SupplierInvoicesPage() {
               className="pl-10"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant={statusFilter === 'all' ? 'primary' : 'secondary'}
               size="sm"
@@ -69,6 +77,20 @@ export default function SupplierInvoicesPage() {
               onClick={() => setStatusFilter(InvoiceStatus.Pending)}
             >
               Pending
+            </Button>
+            <Button
+              variant={statusFilter === InvoiceStatus.Approved ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setStatusFilter(InvoiceStatus.Approved)}
+            >
+              Awaiting Approval
+            </Button>
+            <Button
+              variant={statusFilter === InvoiceStatus.FundingApproved ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setStatusFilter(InvoiceStatus.FundingApproved)}
+            >
+              Ready to Fund
             </Button>
             <Button
               variant={statusFilter === InvoiceStatus.Funded ? 'primary' : 'secondary'}
@@ -171,12 +193,20 @@ export default function SupplierInvoicesPage() {
                         <StatusBadge status={invoice.status} />
                       </td>
                       <td className="p-4 text-right">
-                        <Link
-                          href={`/dashboard/supplier/invoices/${invoice.id}`}
-                          className="text-primary hover:underline text-body-sm"
-                        >
-                          View
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          {invoice.status === InvoiceStatus.FundingApproved && (
+                            <RequestFundingButton
+                              invoice={invoice}
+                              onSuccess={handleFundingSuccess}
+                            />
+                          )}
+                          <Link
+                            href={`/dashboard/supplier/invoices/${invoice.id}`}
+                            className="text-primary hover:underline text-body-sm"
+                          >
+                            View
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -194,6 +224,7 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   const variants: Record<InvoiceStatus, 'warning' | 'info' | 'success' | 'error' | 'default'> = {
     [InvoiceStatus.Pending]: 'warning',
     [InvoiceStatus.Approved]: 'info',
+    [InvoiceStatus.FundingApproved]: 'info',
     [InvoiceStatus.Funded]: 'success',
     [InvoiceStatus.Paid]: 'success',
     [InvoiceStatus.Cancelled]: 'default',

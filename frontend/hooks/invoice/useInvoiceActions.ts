@@ -1,9 +1,11 @@
 'use client';
 
+import { useState, useCallback, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { type Address, stringToHex, pad } from 'viem';
 import { useChainId } from 'wagmi';
 import { invoiceDiamondAbi } from '@/abis/InvoiceDiamond';
+import { executionPoolAbi } from '@/abis/ExecutionPool';
 import { getContractAddresses } from '@/lib/contracts';
 
 // ============ Helper Functions ============
@@ -165,6 +167,70 @@ export function useProcessRepayment() {
   };
 }
 
+// ============ Approve Funding (Operator) ============
+
+export function useApproveFunding() {
+  const chainId = useChainId();
+  const addresses = getContractAddresses(chainId);
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const approveFunding = (invoiceId: bigint) => {
+    writeContract({
+      address: addresses.invoiceDiamond as Address,
+      abi: invoiceDiamondAbi,
+      functionName: 'approveFunding',
+      args: [invoiceId],
+    });
+  };
+
+  return {
+    approveFunding,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    receipt,
+    error,
+    reset,
+  };
+}
+
+// ============ Batch Approve Funding (Operator) ============
+
+export function useBatchApproveFunding() {
+  const chainId = useChainId();
+  const addresses = getContractAddresses(chainId);
+  const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess, data: receipt } = useWaitForTransactionReceipt({
+    hash,
+  });
+
+  const batchApproveFunding = (invoiceIds: bigint[]) => {
+    writeContract({
+      address: addresses.invoiceDiamond as Address,
+      abi: invoiceDiamondAbi,
+      functionName: 'batchApproveFunding',
+      args: [invoiceIds],
+    });
+  };
+
+  return {
+    batchApproveFunding,
+    hash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    receipt,
+    error,
+    reset,
+  };
+}
+
 // ============ Request Funding (Operator) ============
 
 export function useRequestFunding() {
@@ -257,6 +323,138 @@ export function useMarkDefaulted() {
     isSuccess,
     receipt,
     error,
+    reset,
+  };
+}
+
+// ============ Supplier Request Funding ============
+
+type SupplierFundingStep = 'idle' | 'diamond' | 'execution' | 'complete';
+
+/**
+ * Hook for suppliers to request funding for their approved invoices
+ *
+ * This ensures both contracts stay in sync:
+ * Step 1: Call Diamond.supplierRequestFunding(invoiceId) - updates Diamond state
+ * Step 2: Call ExecutionPool.fundInvoice(...) - transfers USDC to supplier
+ */
+export function useSupplierRequestFunding() {
+  const chainId = useChainId();
+  const addresses = getContractAddresses(chainId);
+
+  const [step, setStep] = useState<SupplierFundingStep>('idle');
+  const [pendingParams, setPendingParams] = useState<{
+    invoiceId: bigint;
+    supplier: Address;
+    fundingAmount: bigint;
+    faceValue: bigint;
+  } | null>(null);
+  const [overallError, setOverallError] = useState<Error | null>(null);
+
+  // Step 1: Diamond supplierRequestFunding
+  const {
+    writeContract: writeDiamond,
+    data: diamondHash,
+    isPending: isDiamondPending,
+    error: diamondError,
+    reset: resetDiamond,
+  } = useWriteContract();
+
+  const { isLoading: isDiamondConfirming, isSuccess: isDiamondSuccess } = useWaitForTransactionReceipt({
+    hash: diamondHash,
+  });
+
+  // Step 2: ExecutionPool fundInvoice
+  const {
+    writeContract: writeExecution,
+    data: executionHash,
+    isPending: isExecutionPending,
+    error: executionError,
+    reset: resetExecution,
+  } = useWriteContract();
+
+  const { isLoading: isExecutionConfirming, isSuccess: isExecutionSuccess } = useWaitForTransactionReceipt({
+    hash: executionHash,
+  });
+
+  // Start the funding process
+  const requestFunding = useCallback((
+    invoiceId: bigint,
+    supplier: Address,
+    fundingAmount: bigint,
+    faceValue: bigint
+  ) => {
+    setOverallError(null);
+    setPendingParams({ invoiceId, supplier, fundingAmount, faceValue });
+    setStep('diamond');
+
+    // Step 1: Update Diamond state via supplier-specific function
+    writeDiamond({
+      address: addresses.invoiceDiamond as Address,
+      abi: invoiceDiamondAbi,
+      functionName: 'supplierRequestFunding',
+      args: [invoiceId],
+    });
+  }, [addresses.invoiceDiamond, writeDiamond]);
+
+  // When Diamond succeeds, proceed to ExecutionPool
+  useEffect(() => {
+    if (isDiamondSuccess && step === 'diamond' && pendingParams) {
+      setStep('execution');
+      writeExecution({
+        address: addresses.executionPool as Address,
+        abi: executionPoolAbi,
+        functionName: 'fundInvoice',
+        args: [
+          pendingParams.invoiceId,
+          pendingParams.supplier,
+          pendingParams.fundingAmount,
+          pendingParams.faceValue
+        ],
+      });
+    }
+  }, [isDiamondSuccess, step, pendingParams, addresses.executionPool, writeExecution]);
+
+  // When ExecutionPool succeeds, mark complete
+  useEffect(() => {
+    if (isExecutionSuccess && step === 'execution') {
+      setStep('complete');
+    }
+  }, [isExecutionSuccess, step]);
+
+  // Handle errors
+  useEffect(() => {
+    if (diamondError && step === 'diamond') {
+      setOverallError(diamondError);
+      setStep('idle');
+    }
+    if (executionError && step === 'execution') {
+      setOverallError(executionError);
+      setStep('idle');
+    }
+  }, [diamondError, executionError, step]);
+
+  const reset = useCallback(() => {
+    setStep('idle');
+    setPendingParams(null);
+    setOverallError(null);
+    resetDiamond();
+    resetExecution();
+  }, [resetDiamond, resetExecution]);
+
+  const isPending = isDiamondPending || isExecutionPending;
+  const isConfirming = isDiamondConfirming || isExecutionConfirming;
+  const isSuccess = step === 'complete';
+
+  return {
+    requestFunding,
+    step,
+    diamondHash,
+    executionHash,
+    isPending,
+    isConfirming,
+    isSuccess,
+    error: overallError,
     reset,
   };
 }

@@ -71,10 +71,32 @@ export function useAllInvoices(statusFilter?: InvoiceStatus) {
 }
 
 /**
- * Hook to get approved invoices (ready for funding)
+ * Hook to get invoices awaiting operator funding approval (Approved status)
+ */
+export function useAwaitingFundingApproval() {
+  const { data, stats, isLoading, refetch } = useAllInvoices(1); // InvoiceStatus.Approved = 1
+
+  return {
+    data,
+    count: data.length,
+    isLoading,
+    refetch,
+    stats,
+  };
+}
+
+/**
+ * Hook to get approved invoices (alias for useAwaitingFundingApproval for backwards compatibility)
  */
 export function useApprovedInvoices() {
-  const { data, stats, isLoading, refetch } = useAllInvoices(1); // InvoiceStatus.Approved = 1
+  return useAwaitingFundingApproval();
+}
+
+/**
+ * Hook to get invoices ready for funding (FundingApproved status)
+ */
+export function useReadyForFunding() {
+  const { data, stats, isLoading, refetch } = useAllInvoices(2); // InvoiceStatus.FundingApproved = 2
 
   return {
     data,
@@ -89,7 +111,7 @@ export function useApprovedInvoices() {
  * Hook to get overdue funded invoices (past maturity, not paid)
  */
 export function useOverdueInvoices() {
-  const { data: allFunded, isLoading, refetch } = useAllInvoices(2); // InvoiceStatus.Funded = 2
+  const { data: allFunded, isLoading, refetch } = useAllInvoices(3); // InvoiceStatus.Funded = 3
 
   const overdueInvoices = useMemo(() => {
     const now = BigInt(Math.floor(Date.now() / 1000));
@@ -108,7 +130,7 @@ export function useOverdueInvoices() {
  * Hook to get funded invoices (active)
  */
 export function useFundedInvoices() {
-  const { data, isLoading, refetch } = useAllInvoices(2); // InvoiceStatus.Funded = 2
+  const { data, isLoading, refetch } = useAllInvoices(3); // InvoiceStatus.Funded = 3
 
   return {
     data,

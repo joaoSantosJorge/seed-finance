@@ -47,6 +47,13 @@ interface IInvoiceDiamond {
         uint64 approvedAt
     );
 
+    /// @notice Emitted when operator approves funding for an invoice
+    event FundingApprovalGranted(
+        uint256 indexed invoiceId,
+        address indexed operator,
+        uint64 approvedAt
+    );
+
     /// @notice Emitted when an invoice is funded
     event InvoiceFunded(
         uint256 indexed invoiceId,
@@ -156,11 +163,24 @@ interface IInvoiceDiamond {
 
     // ============ FundingFacet Functions ============
 
-    /// @notice Request funding for an approved invoice
+    /// @notice Approve funding for an invoice (operator approval step)
+    /// @param invoiceId The invoice ID to approve funding for
+    function approveFunding(uint256 invoiceId) external;
+
+    /// @notice Batch approve funding for multiple invoices
+    /// @param invoiceIds Array of invoice IDs to approve funding for
+    function batchApproveFunding(uint256[] calldata invoiceIds) external;
+
+    /// @notice Check if an invoice can have its funding approved
+    /// @param invoiceId The invoice ID to check
+    /// @return canApprove True if invoice can have funding approved
+    function canApproveFunding(uint256 invoiceId) external view returns (bool canApprove);
+
+    /// @notice Request funding for a funding-approved invoice
     /// @param invoiceId The invoice ID to fund
     function requestFunding(uint256 invoiceId) external;
 
-    /// @notice Batch fund multiple approved invoices
+    /// @notice Batch fund multiple funding-approved invoices
     /// @param invoiceIds Array of invoice IDs to fund
     function batchFund(uint256[] calldata invoiceIds) external;
 
@@ -220,6 +240,14 @@ interface IInvoiceDiamond {
     /// @param buyer The buyer address
     /// @return invoiceIds Array of funded invoice IDs
     function getUpcomingRepayments(address buyer) external view returns (uint256[] memory invoiceIds);
+
+    /// @notice Get invoices awaiting operator funding approval (Approved status)
+    /// @return invoiceIds Array of invoice IDs awaiting funding approval
+    function getAwaitingFundingApproval() external view returns (uint256[] memory invoiceIds);
+
+    /// @notice Get invoices ready for funding (FundingApproved status)
+    /// @return invoiceIds Array of invoice IDs ready for funding
+    function getReadyForFunding() external view returns (uint256[] memory invoiceIds);
 
     /// @notice Get aggregate statistics
     /// @return totalFunded Total USDC funded

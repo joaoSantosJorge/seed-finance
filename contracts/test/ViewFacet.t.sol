@@ -73,11 +73,12 @@ contract ViewFacetTest is Test {
             functionSelectors: invoiceSelectors
         });
 
-        bytes4[] memory fundingSelectors = new bytes4[](4);
-        fundingSelectors[0] = FundingFacet.requestFunding.selector;
-        fundingSelectors[1] = FundingFacet.batchFund.selector;
-        fundingSelectors[2] = FundingFacet.canFundInvoice.selector;
-        fundingSelectors[3] = FundingFacet.getFundingAmount.selector;
+        bytes4[] memory fundingSelectors = new bytes4[](5);
+        fundingSelectors[0] = FundingFacet.approveFunding.selector;
+        fundingSelectors[1] = FundingFacet.requestFunding.selector;
+        fundingSelectors[2] = FundingFacet.batchFund.selector;
+        fundingSelectors[3] = FundingFacet.canFundInvoice.selector;
+        fundingSelectors[4] = FundingFacet.getFundingAmount.selector;
         cuts[1] = InvoiceDiamond.FacetCut({
             facetAddress: address(fundingFacet),
             action: InvoiceDiamond.FacetCutAction.Add,
@@ -185,6 +186,10 @@ contract ViewFacetTest is Test {
 
     function _createFundedInvoice() internal returns (uint256) {
         uint256 invoiceId = _createApprovedInvoice();
+
+        // Approve funding (operator approval)
+        vm.prank(operator);
+        FundingFacet(address(diamond)).approveFunding(invoiceId);
 
         // Fund via FundingFacet (updates diamond storage)
         vm.prank(operator);
@@ -452,12 +457,16 @@ contract ViewFacetTest is Test {
         uint256[] memory pending = ViewFacet(address(diamond)).getPendingApprovals(buyer);
         assertEq(pending.length, 1);
 
-        // Approve
+        // Approve (buyer)
         vm.prank(buyer);
         InvoiceFacet(address(diamond)).approveInvoice(invoiceId);
 
         pending = ViewFacet(address(diamond)).getPendingApprovals(buyer);
         assertEq(pending.length, 0);
+
+        // Approve funding (operator)
+        vm.prank(operator);
+        FundingFacet(address(diamond)).approveFunding(invoiceId);
 
         // Fund via FundingFacet (updates diamond storage)
         vm.prank(operator);

@@ -35,7 +35,35 @@ export const invoiceDiamondAbi = [
 
   // ============ FundingFacet ============
   {
+    name: 'approveFunding',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'invoiceId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    name: 'batchApproveFunding',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'invoiceIds', type: 'uint256[]' }],
+    outputs: [],
+  },
+  {
+    name: 'canApproveFunding',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [{ name: 'invoiceId', type: 'uint256' }],
+    outputs: [{ name: 'canApprove', type: 'bool' }],
+  },
+  {
     name: 'requestFunding',
+    type: 'function',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'invoiceId', type: 'uint256' }],
+    outputs: [],
+  },
+  {
+    name: 'supplierRequestFunding',
     type: 'function',
     stateMutability: 'nonpayable',
     inputs: [{ name: 'invoiceId', type: 'uint256' }],
@@ -150,6 +178,20 @@ export const invoiceDiamondAbi = [
     outputs: [{ name: 'invoiceIds', type: 'uint256[]' }],
   },
   {
+    name: 'getAwaitingFundingApproval',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: 'invoiceIds', type: 'uint256[]' }],
+  },
+  {
+    name: 'getReadyForFunding',
+    type: 'function',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: 'invoiceIds', type: 'uint256[]' }],
+  },
+  {
     name: 'getStats',
     type: 'function',
     stateMutability: 'view',
@@ -246,6 +288,15 @@ export const invoiceDiamondAbi = [
     inputs: [
       { name: 'invoiceId', type: 'uint256', indexed: true },
       { name: 'buyer', type: 'address', indexed: true },
+      { name: 'approvedAt', type: 'uint64', indexed: false },
+    ],
+  },
+  {
+    name: 'FundingApprovalGranted',
+    type: 'event',
+    inputs: [
+      { name: 'invoiceId', type: 'uint256', indexed: true },
+      { name: 'operator', type: 'address', indexed: true },
       { name: 'approvedAt', type: 'uint64', indexed: false },
     ],
   },

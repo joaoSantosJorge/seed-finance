@@ -10,6 +10,7 @@ export * from './InvoiceTable';
 export * from './InvoiceStatusBadge';
 export * from './FundInvoiceForm';
 export * from './BatchFundModal';
+export * from './BatchApproveModal';
 export * from './TreasuryCard';
 export * from './TreasuryActionsForm';
 export * from './ContractAddressesCard';

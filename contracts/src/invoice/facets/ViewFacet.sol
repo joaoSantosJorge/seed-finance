@@ -120,6 +120,58 @@ contract ViewFacet {
         }
     }
 
+    /**
+     * @notice Get invoices awaiting operator funding approval (Approved status)
+     * @return invoiceIds Array of invoice IDs awaiting funding approval
+     */
+    function getAwaitingFundingApproval() external view returns (uint256[] memory invoiceIds) {
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        uint256 nextId = s.nextInvoiceId;
+
+        // Count approved (awaiting funding approval)
+        uint256 approvedCount = 0;
+        for (uint256 i = 1; i < nextId; i++) {
+            if (s.invoices[i].status == LibInvoiceStorage.InvoiceStatus.Approved) {
+                approvedCount++;
+            }
+        }
+
+        // Build array
+        invoiceIds = new uint256[](approvedCount);
+        uint256 j = 0;
+        for (uint256 i = 1; i < nextId; i++) {
+            if (s.invoices[i].status == LibInvoiceStorage.InvoiceStatus.Approved) {
+                invoiceIds[j++] = i;
+            }
+        }
+    }
+
+    /**
+     * @notice Get invoices ready for funding (FundingApproved status)
+     * @return invoiceIds Array of invoice IDs ready for funding
+     */
+    function getReadyForFunding() external view returns (uint256[] memory invoiceIds) {
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        uint256 nextId = s.nextInvoiceId;
+
+        // Count funding approved (ready for funding)
+        uint256 fundingApprovedCount = 0;
+        for (uint256 i = 1; i < nextId; i++) {
+            if (s.invoices[i].status == LibInvoiceStorage.InvoiceStatus.FundingApproved) {
+                fundingApprovedCount++;
+            }
+        }
+
+        // Build array
+        invoiceIds = new uint256[](fundingApprovedCount);
+        uint256 j = 0;
+        for (uint256 i = 1; i < nextId; i++) {
+            if (s.invoices[i].status == LibInvoiceStorage.InvoiceStatus.FundingApproved) {
+                invoiceIds[j++] = i;
+            }
+        }
+    }
+
     // ============ Stats Queries ============
 
     /**

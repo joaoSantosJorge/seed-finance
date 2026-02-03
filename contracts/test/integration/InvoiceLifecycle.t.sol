@@ -84,11 +84,12 @@ contract InvoiceLifecycleTest is Test {
         });
 
         // FundingFacet selectors
-        bytes4[] memory fundingSelectors = new bytes4[](4);
-        fundingSelectors[0] = FundingFacet.requestFunding.selector;
-        fundingSelectors[1] = FundingFacet.batchFund.selector;
-        fundingSelectors[2] = FundingFacet.canFundInvoice.selector;
-        fundingSelectors[3] = FundingFacet.getFundingAmount.selector;
+        bytes4[] memory fundingSelectors = new bytes4[](5);
+        fundingSelectors[0] = FundingFacet.approveFunding.selector;
+        fundingSelectors[1] = FundingFacet.requestFunding.selector;
+        fundingSelectors[2] = FundingFacet.batchFund.selector;
+        fundingSelectors[3] = FundingFacet.canFundInvoice.selector;
+        fundingSelectors[4] = FundingFacet.getFundingAmount.selector;
 
         cuts[1] = InvoiceDiamond.FacetCut({
             facetAddress: address(fundingFacet),
@@ -404,6 +405,10 @@ contract InvoiceLifecycleTest is Test {
 
         vm.prank(buyer);
         InvoiceFacet(address(diamond)).approveInvoice(invoiceId);
+
+        // Approve funding (operator)
+        vm.prank(operator);
+        FundingFacet(address(diamond)).approveFunding(invoiceId);
 
         // Fund via Diamond's FundingFacet (updates diamond storage)
         // This updates the invoice status in diamond storage

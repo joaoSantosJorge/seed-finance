@@ -29,6 +29,12 @@ contract FundingFacet {
         uint128 amount
     );
 
+    event FundingApprovalGranted(
+        uint256 indexed invoiceId,
+        address indexed operator,
+        uint64 approvedAt
+    );
+
     // ============ Errors ============
 
     error InvoiceNotFound(uint256 invoiceId);
@@ -40,11 +46,11 @@ contract FundingFacet {
     // ============ External Functions ============
 
     /**
-     * @notice Request funding for an approved invoice
-     * @dev Only callable by operators. Calculates funding amount and coordinates with ExecutionPool
-     * @param invoiceId The invoice ID to fund
+     * @notice Approve funding for an invoice (operator approval step)
+     * @dev Only callable by operators. Moves invoice from Approved to FundingApproved status
+     * @param invoiceId The invoice ID to approve funding for
      */
-    function requestFunding(uint256 invoiceId) external {
+    function approveFunding(uint256 invoiceId) external {
         LibInvoiceStorage.enforceIsOperator();
 
         LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
@@ -56,6 +62,59 @@ contract FundingFacet {
             revert InvalidInvoiceStatus(
                 invoiceId,
                 LibInvoiceStorage.InvoiceStatus.Approved,
+                invoice.status
+            );
+        }
+
+        // Update status to FundingApproved
+        invoice.status = LibInvoiceStorage.InvoiceStatus.FundingApproved;
+
+        emit FundingApprovalGranted(invoiceId, msg.sender, uint64(block.timestamp));
+    }
+
+    /**
+     * @notice Batch approve funding for multiple invoices
+     * @dev Only callable by operators. Skips invoices that aren't in Approved status
+     * @param invoiceIds Array of invoice IDs to approve funding for
+     */
+    function batchApproveFunding(uint256[] calldata invoiceIds) external {
+        LibInvoiceStorage.enforceIsOperator();
+
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+
+        for (uint256 i = 0; i < invoiceIds.length; i++) {
+            uint256 invoiceId = invoiceIds[i];
+            LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
+
+            // Skip if not in Approved status
+            if (invoice.createdAt == 0 || invoice.status != LibInvoiceStorage.InvoiceStatus.Approved) {
+                continue;
+            }
+
+            // Update status to FundingApproved
+            invoice.status = LibInvoiceStorage.InvoiceStatus.FundingApproved;
+
+            emit FundingApprovalGranted(invoiceId, msg.sender, uint64(block.timestamp));
+        }
+    }
+
+    /**
+     * @notice Request funding for a funding-approved invoice
+     * @dev Only callable by operators. Calculates funding amount and coordinates with ExecutionPool
+     * @param invoiceId The invoice ID to fund
+     */
+    function requestFunding(uint256 invoiceId) external {
+        LibInvoiceStorage.enforceIsOperator();
+
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
+
+        // Validate
+        if (invoice.createdAt == 0) revert InvoiceNotFound(invoiceId);
+        if (invoice.status != LibInvoiceStorage.InvoiceStatus.FundingApproved) {
+            revert InvalidInvoiceStatus(
+                invoiceId,
+                LibInvoiceStorage.InvoiceStatus.FundingApproved,
                 invoice.status
             );
         }
@@ -96,8 +155,63 @@ contract FundingFacet {
     }
 
     /**
-     * @notice Batch fund multiple approved invoices
-     * @dev Only callable by operators. Skips invoices that aren't in Approved status
+     * @notice Supplier requests funding for their own funding-approved invoice
+     * @dev Only callable by the invoice supplier. Allows suppliers to trigger funding after operator approval
+     * @param invoiceId The invoice ID to fund
+     */
+    function supplierRequestFunding(uint256 invoiceId) external {
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
+
+        // Validate
+        if (invoice.createdAt == 0) revert InvoiceNotFound(invoiceId);
+        if (invoice.supplier != msg.sender) revert Unauthorized(msg.sender, "supplier");
+        if (invoice.status != LibInvoiceStorage.InvoiceStatus.FundingApproved) {
+            revert InvalidInvoiceStatus(
+                invoiceId,
+                LibInvoiceStorage.InvoiceStatus.FundingApproved,
+                invoice.status
+            );
+        }
+        if (s.executionPool == address(0)) revert ExecutionPoolNotSet();
+
+        // Calculate funding amount
+        uint256 secondsToMaturity = invoice.maturityDate > block.timestamp
+            ? invoice.maturityDate - block.timestamp
+            : 0;
+
+        uint128 fundingAmount = LibInvoiceStorage.calculateFundingAmount(
+            invoice.faceValue,
+            invoice.discountRateBps,
+            secondsToMaturity
+        );
+
+        uint128 discount = invoice.faceValue - fundingAmount;
+
+        // Update invoice state
+        invoice.fundingAmount = fundingAmount;
+        invoice.status = LibInvoiceStorage.InvoiceStatus.Funded;
+        invoice.fundedAt = uint64(block.timestamp);
+
+        // Update stats
+        s.totalFunded += fundingAmount;
+        s.activeInvoiceCount++;
+
+        // Emit funding requested event (ExecutionPool listens to this or is called directly)
+        emit FundingRequested(invoiceId, fundingAmount);
+
+        emit InvoiceFunded(
+            invoiceId,
+            invoice.supplier,
+            fundingAmount,
+            discount,
+            uint64(block.timestamp)
+        );
+    }
+
+    /**
+     * @notice Batch fund multiple funding-approved invoices
+     * @dev Only callable by operators. Skips invoices that aren't in FundingApproved status
      * @param invoiceIds Array of invoice IDs to fund
      */
     function batchFund(uint256[] calldata invoiceIds) external {
@@ -110,8 +224,8 @@ contract FundingFacet {
             uint256 invoiceId = invoiceIds[i];
             LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
 
-            // Skip if not approved
-            if (invoice.createdAt == 0 || invoice.status != LibInvoiceStorage.InvoiceStatus.Approved) {
+            // Skip if not funding-approved
+            if (invoice.createdAt == 0 || invoice.status != LibInvoiceStorage.InvoiceStatus.FundingApproved) {
                 continue;
             }
 
@@ -152,6 +266,19 @@ contract FundingFacet {
     // ============ View Functions ============
 
     /**
+     * @notice Check if an invoice can have its funding approved
+     * @param invoiceId The invoice ID to check
+     * @return canApprove True if invoice can have funding approved
+     */
+    function canApproveFunding(uint256 invoiceId) external view returns (bool canApprove) {
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+        LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
+
+        return invoice.createdAt != 0 &&
+               invoice.status == LibInvoiceStorage.InvoiceStatus.Approved;
+    }
+
+    /**
      * @notice Check if an invoice can be funded
      * @param invoiceId The invoice ID to check
      * @return canFund True if invoice can be funded
@@ -161,7 +288,7 @@ contract FundingFacet {
         LibInvoiceStorage.Invoice storage invoice = s.invoices[invoiceId];
 
         return invoice.createdAt != 0 &&
-               invoice.status == LibInvoiceStorage.InvoiceStatus.Approved &&
+               invoice.status == LibInvoiceStorage.InvoiceStatus.FundingApproved &&
                s.executionPool != address(0);
     }
 

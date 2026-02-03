@@ -15,6 +15,8 @@ export function InvoiceStatusBadge({ status, size = 'md' }: InvoiceStatusBadgePr
         return 'warning';
       case InvoiceStatus.Approved:
         return 'info';
+      case InvoiceStatus.FundingApproved:
+        return 'info';
       case InvoiceStatus.Funded:
         return 'success';
       case InvoiceStatus.Paid:

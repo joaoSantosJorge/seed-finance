@@ -13,12 +13,13 @@ library LibInvoiceStorage {
 
     /// @notice Invoice status enumeration
     enum InvoiceStatus {
-        Pending,    // 0 - Created, awaiting buyer approval
-        Approved,   // 1 - Buyer approved, ready for funding
-        Funded,     // 2 - Funds sent to supplier
-        Paid,       // 3 - Buyer repaid, invoice complete
-        Cancelled,  // 4 - Cancelled by buyer or supplier
-        Defaulted   // 5 - Overdue and marked as default
+        Pending,         // 0 - Created, awaiting buyer approval
+        Approved,        // 1 - Buyer approved, awaiting funding approval
+        FundingApproved, // 2 - Operator approved, ready for funding
+        Funded,          // 3 - Funds sent to supplier
+        Paid,            // 4 - Buyer repaid, invoice complete
+        Cancelled,       // 5 - Cancelled by buyer or supplier
+        Defaulted        // 6 - Overdue and marked as default
     }
 
     /// @notice Invoice data structure
