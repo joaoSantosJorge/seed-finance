@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Modal, ModalFooter } from '@/components/ui/Modal';
-import { Badge } from '@/components/ui/Badge';
 import { useSupplierRequestFunding } from '@/hooks/invoice/useInvoiceActions';
 import { useFundingAmount, type Invoice, InvoiceStatus } from '@/hooks/invoice/useInvoice';
 import { useIsInvoiceFunded } from '@/hooks/operator/useExecutionPool';

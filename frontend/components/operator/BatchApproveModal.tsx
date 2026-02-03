@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Modal, ModalFooter } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { useBatchApproveFunding } from '@/hooks/invoice/useInvoiceActions';
 import { type Invoice, InvoiceStatus } from '@/hooks/invoice/useInvoice';
 import { formatCurrency, formatAddress } from '@/lib/formatters';

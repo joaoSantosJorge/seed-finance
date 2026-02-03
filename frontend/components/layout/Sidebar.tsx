@@ -3,64 +3,17 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { type RoleNavigation } from '@/lib/config/navigation';
 
-interface NavItem {
-  href: string;
-  label: string;
-  shortcut?: string;
+interface SidebarProps {
+  navigation: RoleNavigation;
 }
 
-const mainNavItems: NavItem[] = [
-  {
-    href: '/dashboard/financier',
-    label: 'OVERVIEW',
-    shortcut: '1',
-  },
-  {
-    href: '/dashboard/financier/deposit',
-    label: 'DEPOSIT',
-    shortcut: '2',
-  },
-  {
-    href: '/dashboard/financier/withdraw',
-    label: 'WITHDRAW',
-    shortcut: '3',
-  },
-  {
-    href: '/dashboard/financier/portfolio',
-    label: 'PORTFOLIO',
-    shortcut: '4',
-  },
-  {
-    href: '/dashboard/financier/analytics',
-    label: 'ANALYTICS',
-    shortcut: '5',
-  },
-  {
-    href: '/dashboard/financier/transactions',
-    label: 'HISTORY',
-    shortcut: '6',
-  },
-];
-
-const bottomNavItems: NavItem[] = [
-  {
-    href: '/dashboard/financier/settings',
-    label: 'SETTINGS',
-    shortcut: 'S',
-  },
-  {
-    href: 'https://docs.seedfinance.xyz',
-    label: 'HELP',
-    shortcut: '?',
-  },
-];
-
-export function Sidebar() {
+export function Sidebar({ navigation }: SidebarProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) => {
-    if (href === '/dashboard/financier') {
+    if (href === navigation.basePath) {
       return pathname === href;
     }
     return pathname.startsWith(href);
@@ -87,7 +40,7 @@ export function Sidebar() {
           -- NAVIGATION --
         </p>
         <div className="space-y-1">
-          {mainNavItems.map((item) => (
+          {navigation.mainItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -99,32 +52,36 @@ export function Sidebar() {
               )}
             >
               <span>{isActive(item.href) ? `> ${item.label}` : `  ${item.label}`}</span>
-              <span className="text-[var(--text-muted)] text-xs">[{item.shortcut}]</span>
+              {item.shortcut && (
+                <span className="text-[var(--text-muted)] text-xs">[{item.shortcut}]</span>
+              )}
             </Link>
           ))}
         </div>
       </nav>
 
       {/* Bottom Navigation */}
-      <div className="p-4 border-t-2 border-[var(--border-color)]">
-        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4 px-2">
-          -- SYSTEM --
-        </p>
-        <div className="space-y-1">
-          {bottomNavItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              target={item.href.startsWith('http') ? '_blank' : undefined}
-              rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className="flex items-center justify-between px-3 py-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors font-bold text-sm tracking-wider"
-            >
-              <span>  {item.label}</span>
-              <span className="text-xs">[{item.shortcut}]</span>
-            </Link>
-          ))}
+      {navigation.bottomItems && navigation.bottomItems.length > 0 && (
+        <div className="p-4 border-t-2 border-[var(--border-color)]">
+          <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-4 px-2">
+            -- SYSTEM --
+          </p>
+          <div className="space-y-1">
+            {navigation.bottomItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                target={item.href.startsWith('http') ? '_blank' : undefined}
+                rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                className="flex items-center justify-between px-3 py-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors font-bold text-sm tracking-wider"
+              >
+                <span>  {item.label}</span>
+                {item.shortcut && <span className="text-xs">[{item.shortcut}]</span>}
+              </Link>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Status */}
       <div className="p-4 border-t-2 border-[var(--border-color)] text-xs text-[var(--text-muted)]">

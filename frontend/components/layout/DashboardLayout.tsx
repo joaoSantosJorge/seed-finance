@@ -2,19 +2,26 @@
 
 import { type ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
+import { MobileNav } from './MobileNav';
 import { Header } from './Header';
+import { type RoleNavigation, financierNavigation } from '@/lib/config/navigation';
 
 interface DashboardLayoutProps {
   children: ReactNode;
   title?: string;
+  navigation?: RoleNavigation;
 }
 
-export function DashboardLayout({ children, title }: DashboardLayoutProps) {
+export function DashboardLayout({
+  children,
+  title,
+  navigation = financierNavigation,
+}: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)]">
       {/* Sidebar - Desktop only */}
       <div className="hidden lg:block">
-        <Sidebar />
+        <Sidebar navigation={navigation} />
       </div>
 
       {/* Main Content */}
@@ -27,51 +34,8 @@ export function DashboardLayout({ children, title }: DashboardLayoutProps) {
 
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)] border-t-2 border-[var(--border-color)] z-40">
-        <MobileNav />
+        <MobileNav navigation={navigation} />
       </div>
     </div>
-  );
-}
-
-// Mobile Bottom Navigation
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-
-function MobileNav() {
-  const pathname = usePathname();
-
-  const items = [
-    { href: '/dashboard/financier', label: 'HOME' },
-    { href: '/dashboard/financier/deposit', label: 'IN' },
-    { href: '/dashboard/financier/withdraw', label: 'OUT' },
-    { href: '/dashboard/financier/analytics', label: 'DATA' },
-    { href: '/dashboard/financier/transactions', label: 'LOG' },
-  ];
-
-  const isActive = (href: string) => {
-    if (href === '/dashboard/financier') {
-      return pathname === href;
-    }
-    return pathname.startsWith(href);
-  };
-
-  return (
-    <nav className="flex items-center justify-around py-3">
-      {items.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          className={cn(
-            'px-3 py-1 font-bold text-xs tracking-wider transition-colors',
-            isActive(item.href)
-              ? 'bg-[var(--border-color)] text-[var(--bg-primary)]'
-              : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
-          )}
-        >
-          [{item.label}]
-        </Link>
-      ))}
-    </nav>
   );
 }

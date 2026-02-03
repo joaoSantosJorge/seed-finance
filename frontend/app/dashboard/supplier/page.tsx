@@ -180,6 +180,7 @@ function StatusIcon({ status }: { status: InvoiceStatus }) {
     case InvoiceStatus.Pending:
       return <Clock className="w-5 h-5 text-warning" />;
     case InvoiceStatus.Approved:
+    case InvoiceStatus.FundingApproved:
     case InvoiceStatus.Funded:
     case InvoiceStatus.Paid:
       return <CheckCircle className="w-5 h-5 text-success" />;
@@ -192,6 +193,7 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   const styles: Record<InvoiceStatus, string> = {
     [InvoiceStatus.Pending]: 'bg-warning/10 text-warning',
     [InvoiceStatus.Approved]: 'bg-blue-500/10 text-blue-400',
+    [InvoiceStatus.FundingApproved]: 'bg-primary/10 text-primary',
     [InvoiceStatus.Funded]: 'bg-success/10 text-success',
     [InvoiceStatus.Paid]: 'bg-emerald-500/10 text-emerald-400',
     [InvoiceStatus.Cancelled]: 'bg-slate-500/10 text-slate-400',
@@ -201,6 +203,7 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
   const labels: Record<InvoiceStatus, string> = {
     [InvoiceStatus.Pending]: 'Pending',
     [InvoiceStatus.Approved]: 'Approved',
+    [InvoiceStatus.FundingApproved]: 'Ready to Fund',
     [InvoiceStatus.Funded]: 'Funded',
     [InvoiceStatus.Paid]: 'Paid',
     [InvoiceStatus.Cancelled]: 'Cancelled',

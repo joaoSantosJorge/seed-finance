@@ -12,13 +12,13 @@ import { useQueryClient } from '@tanstack/react-query';
 
 export default function SupplierInvoicesPage() {
   const { address } = useAccount();
-  const { data: invoices, isLoading, refetch } = useSupplierInvoices(address);
+  const { data: invoices, isLoading } = useSupplierInvoices(address);
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
 
   const handleFundingSuccess = () => {
-    refetch();
+    queryClient.invalidateQueries({ queryKey: ['supplierInvoices', address] });
     queryClient.invalidateQueries({ queryKey: ['poolState'] });
   };
 
