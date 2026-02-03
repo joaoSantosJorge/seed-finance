@@ -133,10 +133,16 @@ Listening on 0.0.0.0:8545
 By default, Anvil resets when restarted. To persist state across restarts:
 
 ```bash
+cd contracts
 anvil --host 0.0.0.0 --accounts 10 --balance 10000 --state state.json
 ```
 
-This saves blockchain state to `state.json` and reloads it on restart.
+This saves blockchain state to `contracts/state.json` and reloads it on restart.
+
+**Important:**
+- Always run Anvil from the `contracts/` directory
+- Use `Ctrl+C` for graceful shutdown (waits for state to save)
+- See `docs/development/13_anvil_state_management.md` for detailed state management guide
 
 ---
 
@@ -620,9 +626,10 @@ After completing setup, verify:
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** 2026-02-02
+**Document Version:** 1.1
+**Last Updated:** 2026-02-03
 **Related Documents:**
+- `13_anvil_state_management.md` - Detailed guide on state persistence
 - `06_financier_dashboard_manual_testing.md` - Comprehensive UI testing guide
 - `05_centralized_env_config.md` - Environment configuration
 - `contracts/script/DeployLocal.s.sol` - Deployment script source

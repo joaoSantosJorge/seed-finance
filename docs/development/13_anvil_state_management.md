@@ -18,10 +18,14 @@ Anvil provides three flags for state management:
 
 ### Starting Anvil with State Persistence
 
+**Always run Anvil from the `contracts/` directory** to keep state alongside deployment artifacts:
+
 ```bash
-# Start Anvil with full state persistence
+cd contracts
 anvil --host 0.0.0.0 --accounts 10 --balance 10000 --state state.json
 ```
+
+This stores state at `contracts/state.json`, keeping it with the broadcast files and deployment scripts.
 
 ### What Gets Saved
 
@@ -117,6 +121,9 @@ If block number is 0 and contracts don't exist, the state didn't load.
 
 **Solutions:**
 ```bash
+# Ensure you're in the contracts directory
+cd contracts
+
 # Check file exists and has content
 ls -la state.json
 
@@ -124,7 +131,7 @@ ls -la state.json
 head -c 100 state.json
 
 # Try with absolute path
-anvil --state /full/path/to/state.json
+anvil --state /full/path/to/contracts/state.json
 ```
 
 ### State Not Saving
@@ -148,10 +155,13 @@ anvil --state /full/path/to/state.json
 Over time, state files can grow large. To reduce size:
 
 ```bash
+cd contracts
+
 # Start fresh and redeploy
 rm state.json
-anvil --state state.json
-forge script script/DeployLocal.s.sol:DeployLocal --broadcast
+anvil --host 0.0.0.0 --state state.json &
+sleep 2
+forge script script/DeployLocal.s.sol:DeployLocal --rpc-url http://localhost:8545 --broadcast
 ```
 
 ## Project-Specific State Management
@@ -210,6 +220,9 @@ cast call $LP "totalInvoiceYield()(uint256)" --rpc-url http://localhost:8545
 ## Quick Reference
 
 ```bash
+# Always start from contracts directory
+cd contracts
+
 # Start with persistence
 anvil --host 0.0.0.0 --accounts 10 --balance 10000 --state state.json
 
@@ -224,6 +237,15 @@ cast call <ADDRESS> "owner()(address)" --rpc-url http://localhost:8545
 
 # Graceful shutdown: Ctrl+C (once, then wait)
 ```
+
+## File Location
+
+State file location: **`contracts/state.json`**
+
+This keeps the state file alongside:
+- `contracts/broadcast/` - Deployment transaction logs
+- `contracts/script/` - Deployment scripts
+- `contracts/src/` - Contract source code
 
 ## Related Documentation
 
