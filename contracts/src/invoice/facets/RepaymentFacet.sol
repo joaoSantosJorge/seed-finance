@@ -4,6 +4,7 @@ pragma solidity ^0.8.26;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../libraries/LibInvoiceStorage.sol";
+import "../interfaces/IExecutionPool.sol";
 
 /**
  * @title RepaymentFacet
@@ -83,9 +84,11 @@ contract RepaymentFacet {
         // ExecutionPool will then handle the LiquidityPool interaction
         IERC20(s.usdc).safeTransferFrom(msg.sender, address(this), repaymentAmount);
 
-        // If ExecutionPool is set, transfer to it for proper accounting
+        // If ExecutionPool is set, transfer to it and trigger repayment flow
+        // This ensures funds return to LiquidityPool with proper yield tracking
         if (s.executionPool != address(0)) {
             IERC20(s.usdc).safeTransfer(s.executionPool, repaymentAmount);
+            IExecutionPool(s.executionPool).receiveRepayment(invoiceId, msg.sender);
         }
 
         emit InvoicePaid(

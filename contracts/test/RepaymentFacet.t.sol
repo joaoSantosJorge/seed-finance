@@ -334,8 +334,90 @@ contract RepaymentFacetTest is Test {
         vm.prank(buyer);
         RepaymentFacet(address(diamond)).processRepayment(invoiceId);
 
-        // Funds should have been transferred to execution pool
-        assertEq(usdc.balanceOf(address(executionPool)), executionPoolBalanceBefore + FACE_VALUE);
+        // Funds flow through ExecutionPool to LiquidityPool
+        // ExecutionPool should have same balance (funds forwarded to LP)
+        assertEq(usdc.balanceOf(address(executionPool)), executionPoolBalanceBefore);
+    }
+
+    function test_ProcessRepayment_ReturnsToLiquidityPool() public {
+        uint256 invoiceId = _createAndFundInvoice();
+
+        // Get funding amount (what was taken from LP)
+        uint128 fundingAmount = FundingFacet(address(diamond)).getFundingAmount(invoiceId);
+
+        // LP balance before repayment
+        uint256 lpBalanceBefore = usdc.balanceOf(address(liquidityPool));
+
+        vm.prank(buyer);
+        RepaymentFacet(address(diamond)).processRepayment(invoiceId);
+
+        // LP should receive full face value (principal + yield)
+        uint256 lpBalanceAfter = usdc.balanceOf(address(liquidityPool));
+        assertEq(lpBalanceAfter, lpBalanceBefore + FACE_VALUE);
+
+        // Verify yield was tracked in LP
+        uint256 expectedYield = FACE_VALUE - fundingAmount;
+        assertEq(liquidityPool.totalInvoiceYield(), expectedYield);
+
+        // Verify deployed amount decreased
+        assertEq(liquidityPool.totalDeployed(), 0);
+    }
+
+    function test_ProcessRepayment_UpdatesExecutionPoolTracking() public {
+        uint256 invoiceId = _createAndFundInvoice();
+
+        // Verify invoice is marked as funded before repayment
+        assertTrue(executionPool.isInvoiceFunded(invoiceId));
+        assertFalse(executionPool.isInvoiceRepaid(invoiceId));
+
+        (uint256 totalFundedBefore, uint256 totalRepaidBefore, uint256 activeInvoicesBefore) = executionPool.getStats();
+
+        vm.prank(buyer);
+        RepaymentFacet(address(diamond)).processRepayment(invoiceId);
+
+        // Verify invoice is marked as repaid
+        assertTrue(executionPool.isInvoiceRepaid(invoiceId));
+
+        // Verify stats updated
+        (uint256 totalFundedAfter, uint256 totalRepaidAfter, uint256 activeInvoicesAfter) = executionPool.getStats();
+        assertEq(totalFundedAfter, totalFundedBefore); // totalFunded doesn't change on repayment
+        assertEq(totalRepaidAfter, totalRepaidBefore + FACE_VALUE);
+        assertEq(activeInvoicesAfter, activeInvoicesBefore - 1);
+    }
+
+    function test_ProcessRepayment_EndToEndYieldFlow() public {
+        // This test verifies the complete flow:
+        // 1. LP deposits USDC
+        // 2. Invoice is funded (USDC leaves LP)
+        // 3. Buyer repays (USDC returns to LP with yield)
+        // 4. LP share value increases
+
+        uint256 invoiceId = _createAndFundInvoice();
+        uint128 fundingAmount = FundingFacet(address(diamond)).getFundingAmount(invoiceId);
+
+        // Record LP state before repayment
+        uint256 lpTotalAssetsBefore = liquidityPool.totalAssets();
+        uint256 lpTotalDeployedBefore = liquidityPool.totalDeployed();
+        uint256 lpYieldBefore = liquidityPool.totalInvoiceYield();
+
+        // Process repayment
+        vm.prank(buyer);
+        RepaymentFacet(address(diamond)).processRepayment(invoiceId);
+
+        // Verify LP state after repayment
+        uint256 lpTotalAssetsAfter = liquidityPool.totalAssets();
+        uint256 lpTotalDeployedAfter = liquidityPool.totalDeployed();
+        uint256 lpYieldAfter = liquidityPool.totalInvoiceYield();
+
+        // Total assets should increase by yield (face - funding)
+        uint256 expectedYield = FACE_VALUE - fundingAmount;
+        assertEq(lpTotalAssetsAfter, lpTotalAssetsBefore + expectedYield);
+
+        // Deployed should decrease by funding amount
+        assertEq(lpTotalDeployedAfter, lpTotalDeployedBefore - fundingAmount);
+
+        // Yield tracking should increase
+        assertEq(lpYieldAfter, lpYieldBefore + expectedYield);
     }
 
     // ============ markDefaulted Tests ============

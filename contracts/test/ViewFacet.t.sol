@@ -11,6 +11,7 @@ import "../src/invoice/facets/ViewFacet.sol";
 import "../src/invoice/facets/AdminFacet.sol";
 import "../src/invoice/libraries/LibInvoiceStorage.sol";
 import "../src/invoice/interfaces/IInvoiceDiamond.sol";
+import "../src/base/LiquidityPool.sol";
 import "./mocks/MockUSDC.sol";
 
 /**
@@ -34,16 +35,23 @@ contract ViewFacetTest is Test {
     address public supplier = address(0x1);
     address public buyer = address(0x2);
     address public operator = address(0x3);
-    address public liquidityPool = address(0x4);
+    address public lp1 = address(0x4);
+
+    // Contracts
+    LiquidityPool public liquidityPool;
 
     // Test constants
     uint128 constant FACE_VALUE = 10_000e6;
     uint16 constant DISCOUNT_RATE = 500;
     uint64 constant MATURITY_30_DAYS = 30 days;
+    uint256 constant LP_DEPOSIT = 100_000e6;
 
     function setUp() public {
         // Deploy USDC
         usdc = new MockUSDC();
+
+        // Deploy LiquidityPool
+        liquidityPool = new LiquidityPool(IERC20(address(usdc)), "Seed", "SEED");
 
         // Deploy facets
         invoiceFacet = new InvoiceFacet();
@@ -126,18 +134,36 @@ contract ViewFacetTest is Test {
 
         // Deploy ExecutionPool
         executionPool = new ExecutionPool(address(usdc));
-        executionPool.setLiquidityPool(liquidityPool);
-        executionPool.setInvoiceDiamond(address(diamond));
+        executionPool.setLiquidityPool(address(liquidityPool));
+        executionPool.grantRole(executionPool.OPERATOR_ROLE(), operator);
+
+        // Grant ROUTER_ROLE to ExecutionPool
+        liquidityPool.grantRole(liquidityPool.ROUTER_ROLE(), address(executionPool));
 
         // Configure diamond
         AdminFacet(address(diamond)).setOperator(operator, true);
         AdminFacet(address(diamond)).setExecutionPool(address(executionPool));
-        AdminFacet(address(diamond)).setLiquidityPool(liquidityPool);
+        AdminFacet(address(diamond)).setLiquidityPool(address(liquidityPool));
+
+        // Set diamond in execution pool
+        executionPool.setInvoiceDiamond(address(diamond));
 
         // Mint USDC
         usdc.mint(supplier, 1_000_000e6);
         usdc.mint(buyer, 1_000_000e6);
-        usdc.mint(liquidityPool, 10_000_000e6);
+        usdc.mint(lp1, 1_000_000e6);
+
+        // Approve spending
+        vm.prank(lp1);
+        usdc.approve(address(liquidityPool), type(uint256).max);
+        vm.prank(buyer);
+        usdc.approve(address(diamond), type(uint256).max);
+        vm.prank(buyer);
+        usdc.approve(address(executionPool), type(uint256).max);
+
+        // LP deposits for liquidity
+        vm.prank(lp1);
+        liquidityPool.deposit(LP_DEPOSIT, lp1);
     }
 
     // ============ Helper Functions ============
@@ -159,8 +185,16 @@ contract ViewFacetTest is Test {
 
     function _createFundedInvoice() internal returns (uint256) {
         uint256 invoiceId = _createApprovedInvoice();
+
+        // Fund via FundingFacet (updates diamond storage)
         vm.prank(operator);
         FundingFacet(address(diamond)).requestFunding(invoiceId);
+
+        // Fund via ExecutionPool (actual USDC movement and funding record creation)
+        uint128 fundingAmount = FundingFacet(address(diamond)).getFundingAmount(invoiceId);
+        vm.prank(operator);
+        executionPool.fundInvoice(invoiceId, supplier, fundingAmount, FACE_VALUE);
+
         return invoiceId;
     }
 
@@ -337,7 +371,7 @@ contract ViewFacetTest is Test {
             ViewFacet(address(diamond)).getContractAddresses();
 
         assertEq(execPool, address(executionPool));
-        assertEq(liqPool, liquidityPool);
+        assertEq(liqPool, address(liquidityPool));
         assertEq(usdcAddr, address(usdc));
     }
 
@@ -425,9 +459,14 @@ contract ViewFacetTest is Test {
         pending = ViewFacet(address(diamond)).getPendingApprovals(buyer);
         assertEq(pending.length, 0);
 
-        // Fund
+        // Fund via FundingFacet (updates diamond storage)
         vm.prank(operator);
         FundingFacet(address(diamond)).requestFunding(invoiceId);
+
+        // Fund via ExecutionPool (actual USDC movement and funding record creation)
+        uint128 fundingAmount = FundingFacet(address(diamond)).getFundingAmount(invoiceId);
+        vm.prank(operator);
+        executionPool.fundInvoice(invoiceId, supplier, fundingAmount, FACE_VALUE);
 
         uint256[] memory repayments = ViewFacet(address(diamond)).getUpcomingRepayments(buyer);
         assertEq(repayments.length, 1);
