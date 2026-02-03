@@ -10,16 +10,7 @@ import { FundInvoiceForm, InvoiceStatusBadge, ConfirmActionModal } from '@/compo
 import { useInvoice, InvoiceStatus } from '@/hooks/invoice/useInvoice';
 import { useFundingRecord, useIsInvoiceFunded } from '@/hooks/operator/useExecutionPool';
 import { formatCurrency, formatAddress } from '@/lib/formatters';
-import {
-  ArrowLeft,
-  User,
-  Building2,
-  Calendar,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-} from 'lucide-react';
+import { ArrowLeft, User, Building2, Calendar, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, useChainId } from 'wagmi';
 import { invoiceDiamondAbi } from '@/abis/InvoiceDiamond';

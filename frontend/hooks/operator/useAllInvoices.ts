@@ -8,8 +8,8 @@ import { invoiceDiamondAbi } from '@/abis/InvoiceDiamond';
 import { getContractAddresses } from '@/lib/contracts';
 import { useInvoiceStats, type Invoice, type InvoiceStatus } from '../invoice/useInvoice';
 
-// Re-export useInvoiceStats from invoice for convenience
-export { useInvoiceStats };
+// Note: useInvoiceStats is NOT re-exported here to avoid conflicts
+// Import directly from '@/hooks/invoice' instead
 
 /**
  * Hook to fetch all invoices (for admin view)
