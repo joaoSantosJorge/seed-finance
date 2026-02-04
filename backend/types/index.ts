@@ -238,3 +238,7 @@ export interface ContractAddresses {
 // ============ Invoice Types ============
 
 export * from './invoice';
+
+// ============ History/Indexer Types ============
+
+export * from './history';
