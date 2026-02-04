@@ -16,7 +16,11 @@ Suppliers, clients dashboard:
 TODO
 [x] - create suppliers and clients contracts
 [ ] - check if it is working (11_local_anvil_testing)
-[ ] - check interactions
+[ ] - simulate 20 invoices (different buyers (3 suppliers, 3 buyers))
+[ ] - financier dashboar
+[ ] - supplier dashboard
+[ ] - buyer dashboard
+[ ] - operator dashboard
 [ ] - deploy backend and frontend in cloud (keep working with anvil)
 [ ] - create openClaw to test the app????
 [ ] - admin strategies dashboard

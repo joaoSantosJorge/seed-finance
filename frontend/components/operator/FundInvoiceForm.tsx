@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { ConfirmActionModal } from './ConfirmActionModal';
 import { InvoiceStatusBadge } from './InvoiceStatusBadge';
 import { useInvoice, useFundingAmount, InvoiceStatus } from '@/hooks/invoice/useInvoice';
-import { useFundInvoice, useIsInvoiceFunded } from '@/hooks/operator/useExecutionPool';
+import { useCompleteFunding, useIsInvoiceFunded } from '@/hooks/operator/useExecutionPool';
 import { usePoolState } from '@/hooks';
 import { formatCurrency, formatAddress } from '@/lib/formatters';
 import { parseUnits, formatUnits, type Address } from 'viem';
@@ -28,13 +28,14 @@ export function FundInvoiceForm({ invoiceId, onSuccess }: FundInvoiceFormProps) 
   const { availableLiquidity, isLoading: poolLoading } = usePoolState();
 
   const {
-    fundInvoice,
+    completeFunding,
+    step,
     isPending,
     isConfirming,
     isSuccess,
     error,
     reset,
-  } = useFundInvoice();
+  } = useCompleteFunding();
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [useManualAmount, setUseManualAmount] = useState(false);
@@ -78,7 +79,7 @@ export function FundInvoiceForm({ invoiceId, onSuccess }: FundInvoiceFormProps) 
   const handleFund = () => {
     if (!invoice) return;
 
-    fundInvoice(
+    completeFunding(
       invoiceId,
       invoice.supplier as Address,
       fundingAmountToUse,
@@ -279,14 +280,23 @@ export function FundInvoiceForm({ invoiceId, onSuccess }: FundInvoiceFormProps) 
           {/* Transaction Flow */}
           <div className="p-4 bg-[var(--bg-secondary)] border-2 border-[var(--border-color)]">
             <p className="text-body-sm text-cool-gray uppercase tracking-wider mb-3">
-              Transaction Flow
+              Transaction Flow (2 Steps)
             </p>
-            <div className="flex items-center gap-2 text-body-sm text-cool-gray">
-              <span>LiquidityPool</span>
-              <ArrowRight className="w-4 h-4" />
-              <span>ExecutionPool</span>
-              <ArrowRight className="w-4 h-4" />
-              <span className="text-white">{formatAddress(invoice.supplier)}</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-body-sm">
+                <span className={step === 'diamond' ? 'text-[var(--text-primary)]' : step === 'execution' || step === 'complete' ? 'text-green-500' : 'text-cool-gray'}>
+                  1. Update Diamond
+                </span>
+                {(step === 'execution' || step === 'complete') && <CheckCircle className="w-4 h-4 text-green-500" />}
+              </div>
+              <div className="flex items-center gap-2 text-body-sm">
+                <span className={step === 'execution' ? 'text-[var(--text-primary)]' : step === 'complete' ? 'text-green-500' : 'text-cool-gray'}>
+                  2. Transfer USDC
+                </span>
+                <ArrowRight className="w-4 h-4 text-cool-gray" />
+                <span className="text-white">{formatAddress(invoice.supplier)}</span>
+                {step === 'complete' && <CheckCircle className="w-4 h-4 text-green-500" />}
+              </div>
             </div>
           </div>
         </div>

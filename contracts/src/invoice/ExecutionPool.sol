@@ -155,7 +155,12 @@ contract ExecutionPool is AccessControl, ReentrancyGuard {
         address supplier,
         uint128 fundingAmount,
         uint128 faceValue
-    ) external nonReentrant onlyRole(OPERATOR_ROLE) {
+    ) external nonReentrant {
+        // Allow operators OR the supplier themselves to fund
+        require(
+            hasRole(OPERATOR_ROLE, msg.sender) || supplier == msg.sender,
+            "Unauthorized: not operator or supplier"
+        );
         // Validate
         if (supplier == address(0)) revert ZeroAddress();
         if (fundingAmount == 0) revert ZeroAmount();

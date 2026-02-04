@@ -63,7 +63,7 @@ For experienced users, here's the complete setup in one terminal session:
 ```bash
 # Terminal 1: Start Anvil
 cd contracts
-anvil --host 0.0.0.0 --accounts 10 --balance 10000
+anvil --host 0.0.0.0 --accounts 10 --balance 10000 --state state.json
 
 # Terminal 2: Deploy contracts
 cd contracts
