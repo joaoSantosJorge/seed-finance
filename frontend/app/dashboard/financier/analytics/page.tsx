@@ -16,11 +16,11 @@ import type { TimePeriod } from '@/types';
 import { InvoiceStatus } from '@/hooks/invoice/useInvoice';
 import { TrendingUp, AlertTriangle, Clock, DollarSign, Activity, PieChart as PieChartIcon } from 'lucide-react';
 
-// Market comparison rates (updated periodically)
+// Market comparison rates (updated periodically - Feb 2026)
 const MARKET_RATES = {
-  treasuryBills: 5.25,
-  aaveUSDC: 4.12,
-  compoundUSDC: 3.85,
+  treasuryBills: 3.25, // Current short-term T-Bill rate
+  aaveUSDC: 2.85,
+  compoundUSDC: 2.50,
 };
 
 export default function AnalyticsPage() {
@@ -306,7 +306,7 @@ export default function AnalyticsPage() {
               <span className="text-body font-mono text-success">{treasuryInfo.treasuryYield}</span>
             </div>
             <p className="text-body-sm text-silver text-center mt-2">
-              USYC rate: ~5.25% APY (T-Bill backed)
+              USYC rate: ~3.25% APY (T-Bill backed)
             </p>
           </div>
         </Card>
