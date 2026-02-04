@@ -38,6 +38,12 @@ export const buyerNavigation: RoleNavigation = {
       shortcut: '3',
       mobileLabel: 'PAY',
     },
+    {
+      href: '/dashboard/buyer/history',
+      label: 'HISTORY',
+      shortcut: '4',
+      mobileLabel: 'LOG',
+    },
   ],
   bottomItems: [
     {

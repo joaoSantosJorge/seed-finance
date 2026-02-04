@@ -1,12 +1,13 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useReadContract, useReadContracts } from 'wagmi';
 import { type Address } from 'viem';
 import { useChainId } from 'wagmi';
 import { invoiceDiamondAbi } from '@/abis/InvoiceDiamond';
 import { executionPoolAbi } from '@/abis/ExecutionPool';
 import { getContractAddresses } from '@/lib/contracts';
-import type { Invoice, InvoiceStatus } from './useInvoice';
+import { InvoiceStatus, type Invoice } from './useInvoice';
 
 // ============ Supplier Invoices ============
 
@@ -217,4 +218,38 @@ export function useUpcomingRepayments(buyerAddress?: Address) {
     count: sortedInvoices.length,
     totalDue,
   };
+}
+
+// ============ Buyer Approved Invoices (History) ============
+
+export function useBuyerApprovedInvoices(buyerAddress?: Address) {
+  const { data: invoices, isLoading, error } = useBuyerInvoices(buyerAddress);
+
+  const approvedInvoices = useMemo(() => {
+    if (!invoices) return [];
+    return invoices
+      .filter(inv => inv.status >= InvoiceStatus.Approved && inv.status !== InvoiceStatus.Cancelled)
+      .sort((a, b) => Number(b.createdAt - a.createdAt));
+  }, [invoices]);
+
+  const totalApproved = approvedInvoices.reduce((sum, inv) => sum + inv.faceValue, 0n);
+
+  return { data: approvedInvoices, isLoading, error, count: approvedInvoices.length, totalApproved };
+}
+
+// ============ Buyer Paid Invoices (History) ============
+
+export function useBuyerPaidInvoices(buyerAddress?: Address) {
+  const { data: invoices, isLoading, error } = useBuyerInvoices(buyerAddress);
+
+  const paidInvoices = useMemo(() => {
+    if (!invoices) return [];
+    return invoices
+      .filter(inv => inv.status === InvoiceStatus.Paid)
+      .sort((a, b) => Number(b.paidAt - a.paidAt));
+  }, [invoices]);
+
+  const totalPaid = paidInvoices.reduce((sum, inv) => sum + inv.faceValue, 0n);
+
+  return { data: paidInvoices, isLoading, error, count: paidInvoices.length, totalPaid };
 }
