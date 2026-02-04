@@ -1,41 +1,199 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { formatUnits } from 'viem';
 import { PageHeader } from '@/components/layout';
-import { Card, CardHeader, CardTitle, Tabs, TabsList, TabsTrigger } from '@/components/ui';
+import { Card, CardHeader, CardTitle, Tabs, TabsList, TabsTrigger, Tooltip } from '@/components/ui';
 import { MetricCard } from '@/components/pool';
 import { AreaChart, BarChart } from '@/components/charts';
 import { usePoolState } from '@/hooks';
-import { formatCurrency, formatPercent } from '@/lib/formatters';
+import { useExecutionPoolStats } from '@/hooks/operator/useExecutionPool';
+import { useAllInvoices, useOverdueInvoices } from '@/hooks/operator/useAllInvoices';
+import { useInvoiceStats } from '@/hooks/invoice/useInvoice';
+import { USDC_DECIMALS } from '@/lib/contracts';
+import { formatCurrency, formatPercent, formatBps } from '@/lib/formatters';
 import type { TimePeriod } from '@/types';
+import { InvoiceStatus } from '@/hooks/invoice/useInvoice';
+import { TrendingUp, AlertTriangle, Clock, DollarSign, Activity, PieChart as PieChartIcon } from 'lucide-react';
 
-// Empty data - will be populated from real contract data
-const mockYieldHistory: { timestamp: number; value: number }[] = [];
-
-const mockUtilizationHistory: { timestamp: number; value: number }[] = [];
-
-// APY comparison with real market rates; Seed Finance LP shows — until real data available
-const mockAPYComparison = [
-  { name: 'Seed Finance LP', value: 0, color: '#3B82F6' },
-  { name: 'US Treasury Bills', value: 5.25, color: '#F59E0B' },
-  { name: 'Aave USDC', value: 4.12, color: '#10B981' },
-  { name: 'Compound USDC', value: 3.85, color: '#64748B' },
-];
+// Market comparison rates (updated periodically)
+const MARKET_RATES = {
+  treasuryBills: 5.25,
+  aaveUSDC: 4.12,
+  compoundUSDC: 3.85,
+};
 
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<TimePeriod>('30d');
-  const { formattedState, isLoading } = usePoolState();
+  const { poolState, formattedState, isLoading: poolLoading } = usePoolState();
+  const { data: executionStats, isLoading: statsLoading } = useExecutionPoolStats();
+  const { data: allInvoices, stats: invoiceStats, isLoading: invoicesLoading } = useAllInvoices();
+  const { data: overdueInvoices } = useOverdueInvoices();
 
-  // Default metrics - will be populated from real contract data
-  const periodMetrics = {
-    '7d': { apy: 0, change: 0, yield: 0 },
-    '30d': { apy: 0, change: 0, yield: 0 },
-    '90d': { apy: 0, change: 0, yield: 0 },
-    '1y': { apy: 0, change: 0, yield: 0 },
-    'all': { apy: 0, change: 0, yield: 0 },
-  };
+  const isLoading = poolLoading || statsLoading || invoicesLoading;
 
-  const currentMetrics = periodMetrics[period];
+  // Calculate total yield from pool state
+  const yieldData = useMemo(() => {
+    if (!poolState) {
+      return {
+        totalYield: 0n,
+        invoiceYield: 0n,
+        treasuryYield: 0n,
+        totalYieldFormatted: '$0.00',
+        invoiceYieldFormatted: '$0.00',
+        treasuryYieldFormatted: '$0.00',
+        invoiceYieldPct: 0,
+        treasuryYieldPct: 0,
+      };
+    }
+
+    const invoiceYield = poolState.totalInvoiceYield;
+    const treasuryYield = poolState.totalTreasuryYield;
+    const totalYield = invoiceYield + treasuryYield;
+
+    const invoiceYieldPct = totalYield > 0n
+      ? Number((invoiceYield * 100n) / totalYield)
+      : 0;
+    const treasuryYieldPct = totalYield > 0n
+      ? Number((treasuryYield * 100n) / totalYield)
+      : 0;
+
+    return {
+      totalYield,
+      invoiceYield,
+      treasuryYield,
+      totalYieldFormatted: formatCurrency(
+        parseFloat(formatUnits(totalYield, USDC_DECIMALS))
+      ),
+      invoiceYieldFormatted: formatCurrency(
+        parseFloat(formatUnits(invoiceYield, USDC_DECIMALS))
+      ),
+      treasuryYieldFormatted: formatCurrency(
+        parseFloat(formatUnits(treasuryYield, USDC_DECIMALS))
+      ),
+      invoiceYieldPct,
+      treasuryYieldPct,
+    };
+  }, [poolState]);
+
+  // Parse execution pool stats
+  const executionData = useMemo(() => {
+    if (!executionStats) {
+      return {
+        totalFunded: 0n,
+        totalRepaid: 0n,
+        activeInvoices: 0,
+        totalFundedFormatted: '$0.00',
+        totalRepaidFormatted: '$0.00',
+      };
+    }
+
+    const [totalFunded, totalRepaid, activeInvoices] = executionStats as [bigint, bigint, bigint];
+
+    return {
+      totalFunded,
+      totalRepaid,
+      activeInvoices: Number(activeInvoices),
+      totalFundedFormatted: formatCurrency(
+        parseFloat(formatUnits(totalFunded, USDC_DECIMALS))
+      ),
+      totalRepaidFormatted: formatCurrency(
+        parseFloat(formatUnits(totalRepaid, USDC_DECIMALS))
+      ),
+    };
+  }, [executionStats]);
+
+  // Invoice statistics
+  const invoiceData = useMemo(() => {
+    if (!invoiceStats) {
+      return {
+        totalCreated: 0,
+        pending: 0,
+        approved: 0,
+        funded: 0,
+        paid: 0,
+        cancelled: 0,
+        defaulted: 0,
+      };
+    }
+
+    // invoiceStats: [totalPending, totalApproved, totalFunded, nextId]
+    const [totalPending, totalApproved, totalFunded, nextId] = invoiceStats as [bigint, bigint, bigint, bigint];
+
+    // Count by status from allInvoices
+    const statusCounts = allInvoices.reduce((acc, inv) => {
+      acc[inv.status] = (acc[inv.status] || 0) + 1;
+      return acc;
+    }, {} as Record<number, number>);
+
+    return {
+      totalCreated: Number(nextId) - 1,
+      pending: statusCounts[InvoiceStatus.Pending] || 0,
+      approved: statusCounts[InvoiceStatus.Approved] || 0,
+      fundingApproved: statusCounts[InvoiceStatus.FundingApproved] || 0,
+      funded: statusCounts[InvoiceStatus.Funded] || 0,
+      paid: statusCounts[InvoiceStatus.Paid] || 0,
+      cancelled: statusCounts[InvoiceStatus.Cancelled] || 0,
+      defaulted: statusCounts[InvoiceStatus.Defaulted] || 0,
+    };
+  }, [invoiceStats, allInvoices]);
+
+  // Estimated APY calculation (simplified - without historical data)
+  // Based on total yield earned vs total deployed capital
+  const estimatedAPY = useMemo(() => {
+    if (!poolState || poolState.totalDeployed === 0n || yieldData.totalYield === 0n) {
+      return null; // No data yet
+    }
+
+    // Rough estimate: annualize based on yield earned
+    // This is a simplification - real APY needs time-weighted calculation
+    const yieldValue = parseFloat(formatUnits(yieldData.invoiceYield, USDC_DECIMALS));
+    const deployedValue = parseFloat(formatUnits(poolState.totalDeployed, USDC_DECIMALS));
+
+    // If we assume average deployment duration of 30 days
+    if (deployedValue > 0 && yieldValue > 0) {
+      // Annualize: (yield / deployed) * (365 / avgDays)
+      // Using a rough 30-day assumption
+      const avgDays = 30;
+      const annualizedYield = (yieldValue / deployedValue) * (365 / avgDays) * 100;
+      return Math.min(annualizedYield, 50); // Cap at 50% for sanity
+    }
+
+    return null;
+  }, [poolState, yieldData]);
+
+  // APY comparison data
+  const apyComparisonData = useMemo(() => {
+    return [
+      {
+        name: 'Seed Finance LP',
+        value: estimatedAPY ?? 0,
+        color: '#3B82F6',
+      },
+      { name: 'US Treasury Bills', value: MARKET_RATES.treasuryBills, color: '#F59E0B' },
+      { name: 'Aave USDC', value: MARKET_RATES.aaveUSDC, color: '#10B981' },
+      { name: 'Compound USDC', value: MARKET_RATES.compoundUSDC, color: '#64748B' },
+    ];
+  }, [estimatedAPY]);
+
+  // Treasury info
+  const treasuryInfo = useMemo(() => {
+    if (!poolState) {
+      return {
+        inTreasury: '$0.00',
+        allocationRate: '0%',
+        treasuryYield: '$0.00',
+      };
+    }
+
+    return {
+      inTreasury: formatCurrency(
+        parseFloat(formatUnits(poolState.totalInTreasury, USDC_DECIMALS))
+      ),
+      allocationRate: formatBps(poolState.treasuryAllocationRate),
+      treasuryYield: yieldData.treasuryYieldFormatted,
+    };
+  }, [poolState, yieldData]);
 
   return (
     <div className="space-y-6">
@@ -45,7 +203,7 @@ export default function AnalyticsPage() {
         backHref="/dashboard/financier"
       />
 
-      {/* Period Selector */}
+      {/* Period Selector (for future historical data) */}
       <Tabs defaultValue="30d" onChange={(v) => setPeriod(v as TimePeriod)}>
         <TabsList>
           <TabsTrigger value="7d">7D</TabsTrigger>
@@ -59,100 +217,97 @@ export default function AnalyticsPage() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricCard
-          label="Period APY"
-          value={formatPercent(currentMetrics.apy)}
-          change={{
-            value: `${currentMetrics.change >= 0 ? '+' : ''}${formatPercent(currentMetrics.change)} vs prev`,
-            isPositive: currentMetrics.change >= 0,
-          }}
+          label="Total Yield Earned"
+          value={yieldData.totalYieldFormatted}
+          subtext="All-time cumulative yield"
           isLoading={isLoading}
         />
         <MetricCard
-          label="Period Yield"
-          value={formatCurrency(currentMetrics.yield)}
-          subtext={period === '30d' ? '30-day earnings' : `${period} earnings`}
+          label="Current Utilization"
+          value={formattedState?.utilizationRate ?? '0%'}
+          subtext="Capital deployed to invoices"
           isLoading={isLoading}
         />
         <MetricCard
-          label="Projected Annual"
-          value={formatCurrency(0)}
-          subtext="at current rate"
+          label="Active Invoices"
+          value={executionData.activeInvoices.toString()}
+          subtext="Currently funded invoices"
           isLoading={isLoading}
         />
       </div>
 
-      {/* Yield Over Time */}
+      {/* Yield Over Time - Placeholder for historical data */}
       <Card>
         <CardHeader>
           <CardTitle>Yield Over Time</CardTitle>
         </CardHeader>
-        {mockYieldHistory.length === 0 ? (
-          <div className="h-[300px] flex items-center justify-center">
-            <p className="text-cool-gray text-body-sm">No data available</p>
-          </div>
-        ) : (
-          <AreaChart
-            data={mockYieldHistory}
-            color="#10B981"
-            height={300}
-            formatValue={(v) => formatCurrency(v)}
-            formatLabel={(t) =>
-              new Date(t * 1000).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              })
-            }
-          />
-        )}
+        <div className="h-[300px] flex flex-col items-center justify-center bg-slate-800/30 rounded-lg">
+          <Clock className="w-8 h-8 text-cool-gray mb-2" />
+          <p className="text-cool-gray text-body-sm">Historical data coming soon</p>
+          <p className="text-silver text-body-sm mt-1">Requires backend indexer</p>
+        </div>
         <div className="mt-4 flex items-center gap-6 justify-center">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-success rounded-full" />
+            <div className="w-3 h-3 bg-primary rounded-full" />
             <span className="text-body-sm text-cool-gray">Invoice Yield</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-primary rounded-full" />
+            <div className="w-3 h-3 bg-success rounded-full" />
             <span className="text-body-sm text-cool-gray">Treasury Yield</span>
           </div>
         </div>
       </Card>
 
-      {/* Two Column Charts */}
+      {/* Two Column: Utilization History & Treasury Status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Utilization History */}
+        {/* Utilization History - Placeholder */}
         <Card>
           <CardHeader>
             <CardTitle>Pool Utilization History</CardTitle>
           </CardHeader>
-          {mockUtilizationHistory.length === 0 ? (
-            <div className="h-[200px] flex items-center justify-center">
-              <p className="text-cool-gray text-body-sm">No data available</p>
+          <div className="h-[200px] flex flex-col items-center justify-center bg-slate-800/30 rounded-lg">
+            <Activity className="w-6 h-6 text-cool-gray mb-2" />
+            <p className="text-cool-gray text-body-sm">Historical data coming soon</p>
+            <p className="text-silver text-body-sm mt-1">Requires backend indexer</p>
+          </div>
+          <div className="mt-4 p-3 bg-slate-800/50 rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="text-body-sm text-cool-gray">Current Utilization</span>
+              <span className="text-body font-mono text-white">{formattedState?.utilizationRate ?? '0%'}</span>
             </div>
-          ) : (
-            <AreaChart
-              data={mockUtilizationHistory}
-              color="#3B82F6"
-              height={200}
-              formatValue={(v) => `${v.toFixed(0)}%`}
-              formatLabel={(t) =>
-                new Date(t * 1000).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                })
-              }
-            />
-          )}
+          </div>
         </Card>
 
-        {/* Treasury APY */}
+        {/* Treasury Status */}
         <Card>
           <CardHeader>
-            <CardTitle>Treasury APY Tracking</CardTitle>
+            <CardTitle>Treasury Status</CardTitle>
           </CardHeader>
-          <div className="h-[200px] flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-display text-white">—%</p>
-              <p className="text-body-sm text-cool-gray mt-2">USYC Current Rate</p>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-success" />
+                <span className="text-body-sm text-cool-gray">In Treasury (USYC)</span>
+              </div>
+              <span className="text-body font-mono text-white">{treasuryInfo.inTreasury}</span>
             </div>
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <PieChartIcon className="w-4 h-4 text-primary" />
+                <span className="text-body-sm text-cool-gray">Treasury Allocation Rate</span>
+              </div>
+              <span className="text-body font-mono text-white">{treasuryInfo.allocationRate}</span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-success" />
+                <span className="text-body-sm text-cool-gray">Treasury Yield Earned</span>
+              </div>
+              <span className="text-body font-mono text-success">{treasuryInfo.treasuryYield}</span>
+            </div>
+            <p className="text-body-sm text-silver text-center mt-2">
+              USYC rate: ~5.25% APY (T-Bill backed)
+            </p>
           </div>
         </Card>
       </div>
@@ -160,14 +315,67 @@ export default function AnalyticsPage() {
       {/* APY Comparison */}
       <Card>
         <CardHeader>
-          <CardTitle>APY Comparison</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>APY Comparison</CardTitle>
+            {estimatedAPY === null && (
+              <Tooltip content="Seed Finance APY shown as estimated based on yield data. Period-specific APY requires historical data.">
+                <span className="text-body-sm text-silver">(estimated)</span>
+              </Tooltip>
+            )}
+          </div>
         </CardHeader>
         <BarChart
-          data={mockAPYComparison}
+          data={apyComparisonData}
           layout="vertical"
           height={200}
           formatValue={(v) => `${v.toFixed(2)}%`}
         />
+        {estimatedAPY === null && (
+          <p className="text-body-sm text-silver text-center mt-2">
+            Seed Finance APY will be calculated once yield data is available
+          </p>
+        )}
+      </Card>
+
+      {/* Yield Sources Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Yield Sources Breakdown</CardTitle>
+        </CardHeader>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center pb-3 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-primary" />
+              <span className="text-body text-white">Invoice Spread Yield</span>
+            </div>
+            <div className="text-right">
+              <span className="text-body font-mono text-white">{yieldData.invoiceYieldFormatted}</span>
+              {yieldData.totalYield > 0n && (
+                <span className="text-body-sm text-cool-gray ml-2">
+                  ({yieldData.invoiceYieldPct.toFixed(0)}%)
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between items-center pb-3 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-success" />
+              <span className="text-body text-white">Treasury Yield (USYC)</span>
+            </div>
+            <div className="text-right">
+              <span className="text-body font-mono text-white">{yieldData.treasuryYieldFormatted}</span>
+              {yieldData.totalYield > 0n && (
+                <span className="text-body-sm text-cool-gray ml-2">
+                  ({yieldData.treasuryYieldPct.toFixed(0)}%)
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between items-center pt-2">
+            <span className="text-body font-medium text-white">Total Yield Earned</span>
+            <span className="text-body font-mono text-success">{yieldData.totalYieldFormatted}</span>
+          </div>
+        </div>
       </Card>
 
       {/* Pool Health Metrics */}
@@ -182,23 +390,82 @@ export default function AnalyticsPage() {
           </div>
           <div>
             <p className="text-body-sm text-cool-gray mb-1">Active Invoices</p>
-            <p className="text-body font-mono text-white">0</p>
+            <p className="text-body font-mono text-white">{executionData.activeInvoices}</p>
           </div>
           <div>
-            <p className="text-body-sm text-cool-gray mb-1">Avg Invoice Size</p>
-            <p className="text-body font-mono text-white">—</p>
+            <p className="text-body-sm text-cool-gray mb-1">Total Funded</p>
+            <p className="text-body font-mono text-white">{executionData.totalFundedFormatted}</p>
           </div>
           <div>
-            <p className="text-body-sm text-cool-gray mb-1">Avg Days to Maturity</p>
-            <p className="text-body font-mono text-white">—</p>
+            <p className="text-body-sm text-cool-gray mb-1">Total Repaid</p>
+            <p className="text-body font-mono text-white">{executionData.totalRepaidFormatted}</p>
           </div>
           <div>
-            <p className="text-body-sm text-cool-gray mb-1">Default Rate (All Time)</p>
-            <p className="text-body font-mono text-white">—</p>
+            <p className="text-body-sm text-cool-gray mb-1">Utilization Rate</p>
+            <p className="text-body font-mono text-white">{formattedState?.utilizationRate || '0%'}</p>
           </div>
           <div>
-            <p className="text-body-sm text-cool-gray mb-1">Unique Buyers</p>
-            <p className="text-body font-mono text-white">0</p>
+            <p className="text-body-sm text-cool-gray mb-1">Treasury Allocation</p>
+            <p className="text-body font-mono text-white">{formattedState?.treasuryAllocationRate || '0%'}</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Invoice Statistics */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Invoice Statistics</CardTitle>
+        </CardHeader>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="p-4 bg-slate-800/50 rounded-lg">
+            <p className="text-body-sm text-cool-gray mb-1">Total Created</p>
+            <p className="text-xl font-mono text-white">{invoiceData.totalCreated}</p>
+          </div>
+          <div className="p-4 bg-slate-800/50 rounded-lg">
+            <p className="text-body-sm text-cool-gray mb-1">Currently Funded</p>
+            <p className="text-xl font-mono text-primary">{invoiceData.funded}</p>
+          </div>
+          <div className="p-4 bg-slate-800/50 rounded-lg">
+            <p className="text-body-sm text-cool-gray mb-1">Paid (Completed)</p>
+            <p className="text-xl font-mono text-success">{invoiceData.paid}</p>
+          </div>
+          <div className="p-4 bg-slate-800/50 rounded-lg">
+            <div className="flex items-center gap-1 mb-1">
+              <p className="text-body-sm text-cool-gray">Overdue</p>
+              {overdueInvoices.length > 0 && (
+                <AlertTriangle className="w-3.5 h-3.5 text-warning" />
+              )}
+            </div>
+            <p className={`text-xl font-mono ${overdueInvoices.length > 0 ? 'text-warning' : 'text-white'}`}>
+              {overdueInvoices.length}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 pt-4 border-t border-slate-700">
+          <p className="text-body-sm text-cool-gray mb-3">Invoice Pipeline</p>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-silver" />
+              <span className="text-body-sm text-silver">Pending: {invoiceData.pending}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-warning" />
+              <span className="text-body-sm text-silver">Approved: {invoiceData.approved}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary" />
+              <span className="text-body-sm text-silver">Ready to Fund: {invoiceData.fundingApproved}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-error" />
+              <span className="text-body-sm text-silver">Cancelled: {invoiceData.cancelled}</span>
+            </div>
+            {invoiceData.defaulted > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-error" />
+                <span className="text-body-sm text-error">Defaulted: {invoiceData.defaulted}</span>
+              </div>
+            )}
           </div>
         </div>
       </Card>
