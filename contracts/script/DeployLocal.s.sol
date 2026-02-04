@@ -141,12 +141,16 @@ contract DeployLocal is Script {
             functionSelectors: invoiceSelectors
         });
 
-        // FundingFacet selectors
-        bytes4[] memory fundingSelectors = new bytes4[](4);
-        fundingSelectors[0] = FundingFacet.requestFunding.selector;
-        fundingSelectors[1] = FundingFacet.batchFund.selector;
-        fundingSelectors[2] = FundingFacet.canFundInvoice.selector;
-        fundingSelectors[3] = FundingFacet.getFundingAmount.selector;
+        // FundingFacet selectors (8 total for two-step funding flow)
+        bytes4[] memory fundingSelectors = new bytes4[](8);
+        fundingSelectors[0] = FundingFacet.approveFunding.selector;
+        fundingSelectors[1] = FundingFacet.batchApproveFunding.selector;
+        fundingSelectors[2] = FundingFacet.canApproveFunding.selector;
+        fundingSelectors[3] = FundingFacet.supplierRequestFunding.selector;
+        fundingSelectors[4] = FundingFacet.requestFunding.selector;
+        fundingSelectors[5] = FundingFacet.batchFund.selector;
+        fundingSelectors[6] = FundingFacet.canFundInvoice.selector;
+        fundingSelectors[7] = FundingFacet.getFundingAmount.selector;
 
         cuts[1] = InvoiceDiamond.FacetCut({
             facetAddress: address(fundingFacet),
