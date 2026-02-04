@@ -57,10 +57,11 @@ export function FundInvoiceForm({ invoiceId, onSuccess }: FundInvoiceFormProps) 
     return invoice.faceValue - fundingAmountToUse;
   }, [invoice, fundingAmountToUse]);
 
-  // Check if can fund
+  // Check if can fund - now requires FundingApproved status
   const canFund = useMemo(() => {
     if (!invoice) return false;
-    if (invoice.status !== InvoiceStatus.Approved) return false;
+    // Allow funding for both Approved and FundingApproved statuses
+    if (invoice.status !== InvoiceStatus.Approved && invoice.status !== InvoiceStatus.FundingApproved) return false;
     if (isAlreadyFunded) return false;
     if (fundingAmountToUse <= 0n) return false;
     if (fundingAmountToUse > (availableLiquidity ?? 0n)) return false;
@@ -132,7 +133,7 @@ export function FundInvoiceForm({ invoiceId, onSuccess }: FundInvoiceFormProps) 
     );
   }
 
-  if (invoice.status !== InvoiceStatus.Approved) {
+  if (invoice.status !== InvoiceStatus.Approved && invoice.status !== InvoiceStatus.FundingApproved) {
     return (
       <Card>
         <CardHeader>
@@ -142,8 +143,8 @@ export function FundInvoiceForm({ invoiceId, onSuccess }: FundInvoiceFormProps) 
         <div className="p-4 bg-yellow-500/10 border-2 border-yellow-500/20 flex items-center gap-3">
           <AlertTriangle className="w-6 h-6 text-yellow-500" />
           <p className="text-body text-white">
-            Only approved invoices can be funded. Current status:{' '}
-            {invoice.status === InvoiceStatus.Pending ? 'Pending Approval' : 'Not Available'}
+            Only approved or funding-approved invoices can be funded. Current status:{' '}
+            {invoice.status === InvoiceStatus.Pending ? 'Pending Buyer Approval' : 'Not Available'}
           </p>
         </div>
       </Card>

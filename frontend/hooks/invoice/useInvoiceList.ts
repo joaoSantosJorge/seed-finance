@@ -4,6 +4,7 @@ import { useReadContract, useReadContracts } from 'wagmi';
 import { type Address } from 'viem';
 import { useChainId } from 'wagmi';
 import { invoiceDiamondAbi } from '@/abis/InvoiceDiamond';
+import { executionPoolAbi } from '@/abis/ExecutionPool';
 import { getContractAddresses } from '@/lib/contracts';
 import type { Invoice, InvoiceStatus } from './useInvoice';
 
@@ -156,30 +157,64 @@ export function usePendingApprovals(buyerAddress?: Address) {
   };
 }
 
+// ============ Batch Check Repaid Status from ExecutionPool ============
+
+function useRepaidStatus(invoiceIds?: readonly bigint[]) {
+  const chainId = useChainId();
+  const addresses = getContractAddresses(chainId);
+
+  const contracts = invoiceIds?.map((id) => ({
+    address: addresses.executionPool as Address,
+    abi: executionPoolAbi,
+    functionName: 'isInvoiceRepaid' as const,
+    args: [id] as const,
+  })) ?? [];
+
+  return useReadContracts({
+    contracts,
+    query: {
+      enabled: !!addresses.executionPool && !!invoiceIds && invoiceIds.length > 0,
+      refetchInterval: 30000,
+    },
+  });
+}
+
 // ============ Upcoming Repayments with Data ============
 
 export function useUpcomingRepayments(buyerAddress?: Address) {
+  const chainId = useChainId();
   const { data: invoiceIds, isLoading: idsLoading, error: idsError } = useUpcomingRepaymentIds(buyerAddress);
   const { data: invoicesData, isLoading: dataLoading, error: dataError } = useInvoices(invoiceIds);
+  const { data: repaidData, isLoading: repaidLoading } = useRepaidStatus(invoiceIds);
 
   const invoices: Invoice[] = invoicesData
     ?.filter((result): result is { status: 'success'; result: Invoice } => result.status === 'success')
     .map((result) => result.result) ?? [];
 
+  // Filter out invoices that are already repaid in ExecutionPool
+  // This handles the case where ExecutionPool.repayInvoice() was called directly
+  // without updating Diamond state
+  const unpaidInvoices = invoices.filter((invoice, index) => {
+    const repaidResult = repaidData?.[index];
+    // Keep invoice if we can't determine repaid status, or if it's NOT repaid
+    if (!repaidResult || repaidResult.status !== 'success') return true;
+    return repaidResult.result === false;
+  });
+
   // Sort by maturity date (soonest first)
-  const sortedInvoices = [...invoices].sort((a, b) =>
+  const sortedInvoices = [...unpaidInvoices].sort((a, b) =>
     Number(a.maturityDate - b.maturityDate)
   );
 
-  // Calculate totals
-  const totalDue = invoices.reduce((sum, inv) => sum + inv.faceValue, 0n);
+  // Calculate totals (only for unpaid invoices)
+  const totalDue = unpaidInvoices.reduce((sum, inv) => sum + inv.faceValue, 0n);
 
   return {
     data: sortedInvoices,
     invoiceIds,
-    isLoading: idsLoading || dataLoading,
+    isLoading: idsLoading || dataLoading || repaidLoading,
     error: idsError || dataError,
-    count: invoiceIds?.length ?? 0,
+    count: sortedInvoices.length,
     totalDue,
   };
 }

@@ -95,7 +95,7 @@ export function usePoolState() {
     return {
       totalAssets: formatCurrency(
         parseFloat(formatUnits(poolState.totalAssets, USDC_DECIMALS)),
-        true
+        false
       ),
       totalSupply: parseFloat(formatUnits(poolState.totalSupply, SEED_DECIMALS)).toLocaleString(
         'en-US',
@@ -104,15 +104,15 @@ export function usePoolState() {
       sharePrice: formatSharePrice(poolState.sharePrice),
       availableLiquidity: formatCurrency(
         parseFloat(formatUnits(poolState.availableLiquidity, USDC_DECIMALS)),
-        true
+        false
       ),
       totalDeployed: formatCurrency(
         parseFloat(formatUnits(poolState.totalDeployed, USDC_DECIMALS)),
-        true
+        false
       ),
       totalInTreasury: formatCurrency(
         parseFloat(formatUnits(poolState.totalInTreasury, USDC_DECIMALS)),
-        true
+        false
       ),
       utilizationRate: formatBps(poolState.utilizationRate),
       treasuryAllocationRate: formatBps(poolState.treasuryAllocationRate),

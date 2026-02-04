@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { FundInvoiceForm, InvoiceStatusBadge, ConfirmActionModal } from '@/components/operator';
 import { useInvoice, InvoiceStatus } from '@/hooks/invoice/useInvoice';
 import { useFundingRecord, useIsInvoiceFunded } from '@/hooks/operator/useExecutionPool';
+import { useApproveFunding } from '@/hooks/invoice/useInvoiceActions';
 import { formatCurrency, formatAddress } from '@/lib/formatters';
 import { ArrowLeft, User, Building2, Calendar, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -36,10 +37,22 @@ export default function InvoiceDetailPage() {
   const { data: isFunded } = useIsInvoiceFunded(invoiceId);
 
   const [showDefaultModal, setShowDefaultModal] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
 
   // Mark defaulted hook
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  // Approve funding hook
+  const {
+    approveFunding,
+    hash: _approveHash,
+    isPending: isApprovePending,
+    isConfirming: isApproveConfirming,
+    isSuccess: isApproveSuccess,
+    error: approveError,
+    reset: resetApprove,
+  } = useApproveFunding();
 
   useEffect(() => {
     if (isSuccess) {
@@ -49,6 +62,15 @@ export default function InvoiceDetailPage() {
     }
   }, [isSuccess, reset, refetch]);
 
+  // Handle approve funding success
+  useEffect(() => {
+    if (isApproveSuccess) {
+      setShowApproveModal(false);
+      resetApprove();
+      refetch();
+    }
+  }, [isApproveSuccess, resetApprove, refetch]);
+
   const handleMarkDefaulted = () => {
     if (!invoiceId) return;
     writeContract({
@@ -57,6 +79,11 @@ export default function InvoiceDetailPage() {
       functionName: 'markDefaulted',
       args: [invoiceId],
     });
+  };
+
+  const handleApproveFunding = () => {
+    if (!invoiceId) return;
+    approveFunding(invoiceId);
   };
 
   const isLoading = invoiceLoading || fundingLoading;
@@ -244,8 +271,54 @@ export default function InvoiceDetailPage() {
 
         {/* Funding Section */}
         <div className="space-y-6">
-          {/* Show fund form for approved invoices */}
+          {/* Show approve funding button for Approved invoices */}
           {invoice.status === InvoiceStatus.Approved && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Approve for Funding</CardTitle>
+              </CardHeader>
+              <div className="space-y-4">
+                <p className="text-body text-cool-gray">
+                  This invoice has been approved by the buyer. As an operator, you can approve it for funding.
+                  Once approved, the supplier can request the funds.
+                </p>
+
+                <div className="p-4 bg-[var(--bg-secondary)] border-2 border-[var(--border-color)] space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-body-sm text-cool-gray">Face Value</span>
+                    <span className="text-body font-mono text-white">
+                      {formatCurrency(Number(invoice.faceValue) / 1e6)} USDC
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-body-sm text-cool-gray">Discount Rate</span>
+                    <span className="text-body text-white">{invoice.discountRateBps / 100}% APR</span>
+                  </div>
+                </div>
+
+                {approveError && (
+                  <div className="p-4 bg-red-500/10 border-2 border-red-500/20 flex items-center gap-3">
+                    <XCircle className="w-5 h-5 text-red-500" />
+                    <p className="text-body text-red-400">{approveError.message}</p>
+                  </div>
+                )}
+
+                <Button
+                  variant="primary"
+                  onClick={() => setShowApproveModal(true)}
+                  disabled={isApprovePending || isApproveConfirming}
+                  isLoading={isApprovePending || isApproveConfirming}
+                  className="w-full"
+                  leftIcon={<CheckCircle className="w-5 h-5" />}
+                >
+                  Approve for Funding
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* Show fund form for FundingApproved invoices */}
+          {invoice.status === InvoiceStatus.FundingApproved && (
             <FundInvoiceForm
               invoiceId={invoiceId}
               onSuccess={() => {
@@ -342,7 +415,7 @@ export default function InvoiceDetailPage() {
                 </div>
               </div>
 
-              {/* Approved */}
+              {/* Approved (by Buyer) */}
               <div className="flex items-start gap-3">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
                   invoice.status >= InvoiceStatus.Approved ? 'bg-[var(--text-primary)]' : 'bg-[var(--bg-secondary)] border-2 border-[var(--border-color)]'
@@ -355,10 +428,31 @@ export default function InvoiceDetailPage() {
                 </div>
                 <div>
                   <p className={`text-body font-medium ${invoice.status >= InvoiceStatus.Approved ? 'text-white' : 'text-cool-gray'}`}>
-                    Approved
+                    Buyer Approved
                   </p>
                   {invoice.status === InvoiceStatus.Pending && (
                     <p className="text-body-sm text-cool-gray">Awaiting buyer approval</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Funding Approved (by Operator) */}
+              <div className="flex items-start gap-3">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                  invoice.status >= InvoiceStatus.FundingApproved ? 'bg-[var(--text-primary)]' : 'bg-[var(--bg-secondary)] border-2 border-[var(--border-color)]'
+                }`}>
+                  {invoice.status >= InvoiceStatus.FundingApproved ? (
+                    <CheckCircle className="w-4 h-4 text-[var(--bg-primary)]" />
+                  ) : (
+                    <div className="w-2 h-2 rounded-full bg-cool-gray" />
+                  )}
+                </div>
+                <div>
+                  <p className={`text-body font-medium ${invoice.status >= InvoiceStatus.FundingApproved ? 'text-white' : 'text-cool-gray'}`}>
+                    Funding Approved
+                  </p>
+                  {invoice.status === InvoiceStatus.Approved && (
+                    <p className="text-body-sm text-cool-gray">Awaiting operator approval</p>
                   )}
                 </div>
               </div>
@@ -378,8 +472,10 @@ export default function InvoiceDetailPage() {
                   <p className={`text-body font-medium ${invoice.status >= InvoiceStatus.Funded ? 'text-white' : 'text-cool-gray'}`}>
                     Funded
                   </p>
-                  {invoice.fundedAt > 0n && (
+                  {invoice.fundedAt > 0n ? (
                     <p className="text-body-sm text-cool-gray">{formatDate(invoice.fundedAt)}</p>
+                  ) : invoice.status === InvoiceStatus.FundingApproved && (
+                    <p className="text-body-sm text-cool-gray">Ready for funding</p>
                   )}
                 </div>
               </div>
@@ -435,6 +531,18 @@ export default function InvoiceDetailPage() {
         confirmText="Mark Defaulted"
         variant="danger"
         isLoading={isPending || isConfirming}
+      />
+
+      {/* Approve Funding Confirmation */}
+      <ConfirmActionModal
+        isOpen={showApproveModal}
+        onClose={() => setShowApproveModal(false)}
+        onConfirm={handleApproveFunding}
+        title="Approve Invoice for Funding"
+        description={`This will approve Invoice #${invoiceId?.toString()} for funding. The supplier will then be able to request the funds.`}
+        confirmText="Approve Funding"
+        variant="warning"
+        isLoading={isApprovePending || isApproveConfirming}
       />
     </div>
   );
