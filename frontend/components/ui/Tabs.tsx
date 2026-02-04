@@ -90,7 +90,7 @@ export function TabsTrigger({ value, children, className }: TabsTriggerProps) {
         className
       )}
     >
-      {isActive ? <>[ {children} ]</> : children}
+      {children}
     </button>
   );
 }

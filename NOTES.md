@@ -18,6 +18,7 @@ TODO
 [x] - check if it is working (11_local_anvil_testing)
 [x] - simulate 20 invoices (different buyers (5 suppliers, 5 buyers))
 [ ] - financier dashboar
+[ ] - time problem...
 [ ] - supplier dashboard
 [ ] - buyer dashboard
 [ ] - operator dashboard
