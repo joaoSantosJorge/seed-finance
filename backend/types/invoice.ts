@@ -3,6 +3,8 @@
  * Maps to the InvoiceDiamond smart contract structures
  */
 
+import { timeProvider, daysBetween } from '../lib/timeProvider';
+
 // ============ Enums ============
 
 /**
@@ -326,13 +328,31 @@ export function contractToInvoice(
 }
 
 /**
- * Add computed details to an invoice
+ * Add computed details to an invoice (sync version)
+ * Uses timeProvider.nowSync() which returns cached blockchain time or system time
  */
 export function addInvoiceDetails(invoice: Invoice): InvoiceWithDetails {
-  const now = new Date();
-  const daysToMaturity = Math.ceil(
-    (invoice.maturityDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const now = timeProvider.nowSync();
+  const daysToMaturity = daysBetween(now, invoice.maturityDate);
+
+  return {
+    ...invoice,
+    discountAmount: invoice.faceValue - invoice.fundingAmount,
+    yieldAmount: invoice.faceValue - invoice.fundingAmount,
+    daysToMaturity,
+    isOverdue: invoice.status === InvoiceStatus.Funded && daysToMaturity < 0,
+    discountRateAnnual: invoice.discountRateBps / 100,
+  };
+}
+
+/**
+ * Add computed details to an invoice (async version)
+ * Uses timeProvider.now() which fetches fresh blockchain time when in blockchain mode
+ * Prefer this version when you need accurate time-based calculations
+ */
+export async function addInvoiceDetailsAsync(invoice: Invoice): Promise<InvoiceWithDetails> {
+  const now = await timeProvider.now();
+  const daysToMaturity = daysBetween(now, invoice.maturityDate);
 
   return {
     ...invoice,
