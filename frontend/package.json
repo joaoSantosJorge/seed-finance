@@ -13,6 +13,7 @@
   "dependencies": {
     "@lifi/sdk": "^3.15.4",
     "@lifi/widget": "^3.40.5",
+    "@prisma/client": "^6.3.0",
     "@rainbow-me/rainbowkit": "^2.2.3",
     "@tanstack/react-query": "^5.64.2",
     "clsx": "^2.1.1",
@@ -35,6 +36,7 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "^16.1.6",
     "postcss": "^8.4.49",
+    "prisma": "^6.3.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
     "vitest": "^4.0.18"

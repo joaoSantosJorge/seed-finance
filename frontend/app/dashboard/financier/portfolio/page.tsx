@@ -9,14 +9,12 @@ import { AllocationBar, RiskIndicator } from '@/components/portfolio';
 import { useUserPosition, usePoolState } from '@/hooks';
 import { useMaxWithdraw } from '@/hooks/contracts/useLiquidityPool';
 import { useExecutionPoolStats } from '@/hooks/operator/useExecutionPool';
+import { useSharePriceHistory } from '@/hooks/usePoolHistory';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@/components/wallet';
 import { USDC_DECIMALS } from '@/lib/contracts';
 import { formatCurrency, formatPercent, formatBps } from '@/lib/formatters';
 import { AlertTriangle, TrendingUp, Activity, Wallet, PieChart as PieChartIcon } from 'lucide-react';
-
-// Empty share price history - will be populated from backend indexer (Phase 3)
-const mockSharePriceHistory: { timestamp: number; value: number }[] = [];
 
 export default function PortfolioPage() {
   const { address, isConnected } = useAccount();
@@ -24,6 +22,7 @@ export default function PortfolioPage() {
   const { poolState, formattedState, isLoading: poolLoading } = usePoolState();
   const { data: maxWithdraw, isLoading: maxWithdrawLoading } = useMaxWithdraw(address);
   const { data: executionStats } = useExecutionPoolStats();
+  const { dataPoints: sharePriceHistory, isLoading: historyLoading } = useSharePriceHistory('30d');
 
   // Calculate proportional yield for user
   const userYield = useMemo(() => {
@@ -359,14 +358,16 @@ export default function PortfolioPage() {
         <CardHeader>
           <CardTitle>Share Price History</CardTitle>
         </CardHeader>
-        {mockSharePriceHistory.length === 0 ? (
+        {historyLoading ? (
+          <Skeleton className="h-[200px] w-full" />
+        ) : sharePriceHistory.length === 0 ? (
           <div className="h-[200px] flex flex-col items-center justify-center bg-slate-800/30 rounded-lg">
-            <p className="text-cool-gray text-body-sm">Historical data coming soon</p>
-            <p className="text-silver text-body-sm mt-1">Requires backend indexer (Phase 3)</p>
+            <p className="text-cool-gray text-body-sm">No historical data yet</p>
+            <p className="text-silver text-body-sm mt-1">Data will appear after pool activity</p>
           </div>
         ) : (
           <LineChart
-            data={mockSharePriceHistory}
+            data={sharePriceHistory}
             color="#3B82F6"
             height={200}
             formatValue={(v) => `${v.toFixed(4)} USDC`}

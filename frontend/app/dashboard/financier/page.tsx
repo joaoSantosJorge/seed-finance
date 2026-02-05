@@ -7,16 +7,22 @@ import { PositionCard } from '@/components/position';
 import { PoolMetrics, UtilizationBar } from '@/components/pool';
 import { AreaChart } from '@/components/charts';
 import { usePoolState } from '@/hooks';
+import { useSharePriceHistory, useUserTransactionHistory } from '@/hooks/usePoolHistory';
 import { formatCurrency } from '@/lib/formatters';
 
-// Empty data - will be populated from real contract data
-const mockYieldData: { timestamp: number; value: number }[] = [];
-
-// Empty activity - will be populated from real events
-const mockActivity: { type: string; description: string; time: string }[] = [];
-
 export default function FinancierDashboard() {
-  const { isLoading } = usePoolState();
+  const { isLoading: poolLoading } = usePoolState();
+  const { dataPoints: yieldData, isLoading: yieldLoading } = useSharePriceHistory('30d');
+  const { transactions: recentActivity, isLoading: activityLoading } = useUserTransactionHistory(5);
+
+  const isLoading = poolLoading || yieldLoading;
+
+  // Convert transactions to activity format
+  const activityItems = recentActivity.map((tx) => ({
+    type: tx.type === 'deposit' ? 'yield' : 'invoice',
+    description: tx.type === 'deposit' ? `Deposited ${tx.assets}` : `Withdrew ${tx.assets}`,
+    time: tx.relativeTime,
+  }));
 
   return (
     <div className="space-y-8">
@@ -47,20 +53,20 @@ export default function FinancierDashboard() {
         {/* Yield Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Yield Performance (30 Days)</CardTitle>
+            <CardTitle>Share Price (30 Days)</CardTitle>
           </CardHeader>
           {isLoading ? (
             <ChartSkeleton />
-          ) : mockYieldData.length === 0 ? (
+          ) : yieldData.length === 0 ? (
             <div className="h-[200px] flex items-center justify-center">
-              <p className="text-cool-gray text-body-sm">No data available</p>
+              <p className="text-cool-gray text-body-sm">No historical data yet</p>
             </div>
           ) : (
             <AreaChart
-              data={mockYieldData}
+              data={yieldData}
               color="#10B981"
               height={200}
-              formatValue={(v) => formatCurrency(v)}
+              formatValue={(v) => `${v.toFixed(4)} USDC`}
               formatLabel={(t) =>
                 new Date(t * 1000).toLocaleDateString('en-US', {
                   month: 'short',
@@ -133,13 +139,17 @@ export default function FinancierDashboard() {
             View All
           </Link>
         </CardHeader>
-        {mockActivity.length === 0 ? (
+        {activityLoading ? (
+          <div className="py-8 text-center">
+            <p className="text-cool-gray text-body-sm">Loading...</p>
+          </div>
+        ) : activityItems.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-cool-gray text-body-sm">No activity yet</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-700">
-            {mockActivity.map((activity, index) => (
+            {activityItems.map((activity, index) => (
               <div
                 key={index}
                 className="flex items-center justify-between py-3"

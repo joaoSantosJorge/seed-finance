@@ -1,0 +1,21 @@
+{
+  "name": "seed-finance-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "indexer": "tsx src/indexer/runIndexer.ts",
+    "indexer:dev": "tsx watch src/indexer/runIndexer.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.3.0",
+    "dotenv": "^16.4.5",
+    "viem": "^2.21.54"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "prisma": "^6.3.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

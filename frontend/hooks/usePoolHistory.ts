@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { formatUnits } from 'viem';
 import { USDC_DECIMALS } from '@/lib/contracts';
@@ -18,6 +18,25 @@ export interface SharePriceHistoryData {
   change: {
     absolute: number;
     percent: number;
+  };
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface PoolStateDataPoint {
+  timestamp: number;
+  utilizationRate: number;
+  totalInvoiceYield: number;
+  totalTreasuryYield: number;
+  totalAssets: number;
+}
+
+export interface PoolStateHistoryData {
+  dataPoints: PoolStateDataPoint[];
+  yieldChange: {
+    invoice: number;
+    treasury: number;
+    total: number;
   };
   isLoading: boolean;
   error: string | null;
@@ -55,20 +74,17 @@ export interface UserCostBasisData {
   error: string | null;
 }
 
-// ============ Configuration ============
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
 // ============ Share Price History Hook ============
 
 /**
  * Fetch share price history for charting
- * Currently returns mock/empty data - will connect to backend API when available
+ * Connects to /api/pool/share-price-history endpoint
  */
 export function useSharePriceHistory(
   period: '7d' | '30d' | '90d' | 'all' = '30d'
 ): SharePriceHistoryData {
   const [dataPoints, setDataPoints] = useState<SharePriceDataPoint[]>([]);
+  const [change, setChange] = useState({ absolute: 0, percent: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,15 +94,25 @@ export function useSharePriceHistory(
       setError(null);
 
       try {
-        // TODO: Connect to backend API when available
-        // const response = await fetch(`${API_BASE_URL}/api/pool/history?period=${period}`);
-        // const data = await response.json();
-        // setDataPoints(data.dataPoints);
+        const response = await fetch(`/api/pool/share-price-history?period=${period}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch share price history');
+        }
+        const data = await response.json();
 
-        // For now, return empty data - backend indexer needs to be running
-        setDataPoints([]);
+        // Convert to component format (API returns sharePrice, we need value)
+        const points: SharePriceDataPoint[] = data.dataPoints.map(
+          (p: { timestamp: number; sharePrice: number }) => ({
+            timestamp: p.timestamp,
+            value: p.sharePrice,
+          })
+        );
+
+        setDataPoints(points);
+        setChange(data.change || { absolute: 0, percent: 0 });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch share price history');
+        setDataPoints([]);
       } finally {
         setIsLoading(false);
       }
@@ -94,19 +120,6 @@ export function useSharePriceHistory(
 
     fetchHistory();
   }, [period]);
-
-  const change = useMemo(() => {
-    if (dataPoints.length < 2) {
-      return { absolute: 0, percent: 0 };
-    }
-
-    const first = dataPoints[0].value;
-    const last = dataPoints[dataPoints.length - 1].value;
-    const absolute = last - first;
-    const percent = first > 0 ? (absolute / first) * 100 : 0;
-
-    return { absolute, percent };
-  }, [dataPoints]);
 
   return {
     dataPoints,
@@ -116,11 +129,57 @@ export function useSharePriceHistory(
   };
 }
 
+// ============ Pool State History Hook ============
+
+/**
+ * Fetch pool state history for analytics charts
+ * (utilization, yield breakdown, etc.)
+ */
+export function usePoolStateHistory(
+  period: '7d' | '30d' | '90d' | 'all' = '30d'
+): PoolStateHistoryData {
+  const [dataPoints, setDataPoints] = useState<PoolStateDataPoint[]>([]);
+  const [yieldChange, setYieldChange] = useState({ invoice: 0, treasury: 0, total: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchHistory() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(`/api/pool/state-history?period=${period}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch pool state history');
+        }
+        const data = await response.json();
+        setDataPoints(data.dataPoints || []);
+        setYieldChange(data.yieldChange || { invoice: 0, treasury: 0, total: 0 });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch pool state history');
+        setDataPoints([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchHistory();
+  }, [period]);
+
+  return {
+    dataPoints,
+    yieldChange,
+    isLoading,
+    error,
+  };
+}
+
 // ============ User Transaction History Hook ============
 
 /**
  * Fetch user's deposit/withdraw transaction history
- * Currently returns empty data - will connect to backend API when available
+ * Connects to /api/user/:address/transactions endpoint
  */
 export function useUserTransactionHistory(limit = 10): UserTransactionHistoryData {
   const { address, isConnected } = useAccount();
@@ -128,12 +187,13 @@ export function useUserTransactionHistory(limit = 10): UserTransactionHistoryDat
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
+  const [offset, setOffset] = useState(0);
 
   useEffect(() => {
     async function fetchTransactions() {
       if (!isConnected || !address) {
         setTransactions([]);
+        setTotal(0);
         setIsLoading(false);
         return;
       }
@@ -142,17 +202,35 @@ export function useUserTransactionHistory(limit = 10): UserTransactionHistoryDat
       setError(null);
 
       try {
-        // TODO: Connect to backend API when available
-        // const response = await fetch(
-        //   `${API_BASE_URL}/api/users/${address}/transactions?limit=${limit}&page=${page}`
-        // );
-        // const data = await response.json();
-        // setTransactions(data.transactions);
-        // setTotal(data.total);
+        const response = await fetch(
+          `/api/user/${address}/transactions?limit=${limit}&offset=${offset}`
+        );
+        if (!response.ok) {
+          throw new Error('Failed to fetch transaction history');
+        }
+        const data = await response.json();
 
-        // For now, return empty data - backend indexer needs to be running
-        setTransactions([]);
-        setTotal(0);
+        // Format transactions with relative time
+        const formattedTxs: UserTransaction[] = data.transactions.map(
+          (tx: {
+            txHash: string;
+            type: 'deposit' | 'withdraw';
+            assets: string;
+            shares: string;
+            sharePrice: string;
+            timestamp: string;
+          }) => ({
+            ...tx,
+            relativeTime: getRelativeTime(new Date(tx.timestamp)),
+          })
+        );
+
+        if (offset === 0) {
+          setTransactions(formattedTxs);
+        } else {
+          setTransactions((prev) => [...prev, ...formattedTxs]);
+        }
+        setTotal(data.total);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch transaction history');
       } finally {
@@ -161,13 +239,13 @@ export function useUserTransactionHistory(limit = 10): UserTransactionHistoryDat
     }
 
     fetchTransactions();
-  }, [address, isConnected, limit, page]);
+  }, [address, isConnected, limit, offset]);
 
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (transactions.length < total) {
-      setPage((p) => p + 1);
+      setOffset((prev) => prev + limit);
     }
-  };
+  }, [transactions.length, total, limit]);
 
   return {
     transactions,
@@ -179,11 +257,26 @@ export function useUserTransactionHistory(limit = 10): UserTransactionHistoryDat
   };
 }
 
+// Helper to format relative time
+function getRelativeTime(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
 // ============ User Cost Basis Hook ============
 
 /**
  * Fetch user's cost basis and realized/unrealized gains
- * Currently returns zero values - will connect to backend API when available
+ * Connects to /api/user/:address/position endpoint
  */
 export function useUserCostBasis(): UserCostBasisData {
   const { address, isConnected } = useAccount();
@@ -218,25 +311,32 @@ export function useUserCostBasis(): UserCostBasisData {
       setError(null);
 
       try {
-        // TODO: Connect to backend API when available
-        // const response = await fetch(`${API_BASE_URL}/api/users/${address}/position`);
-        // const json = await response.json();
-        // setData({
-        //   costBasis: BigInt(json.costBasis),
-        //   totalDeposited: BigInt(json.totalDeposited),
-        //   totalWithdrawn: BigInt(json.totalWithdrawn),
-        //   realizedGain: BigInt(json.realizedGain),
-        // });
+        const response = await fetch(`/api/user/${address}/position`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch user position');
+        }
+        const json = await response.json();
 
-        // For now, return zero - backend indexer needs to be running
+        // Convert string values to bigint (values are in decimal format from API)
+        const parseToBigint = (val: string) => {
+          const num = parseFloat(val);
+          return BigInt(Math.round(num * 1e6)); // Convert to 6 decimal bigint
+        };
+
+        setData({
+          costBasis: parseToBigint(json.costBasis),
+          totalDeposited: parseToBigint(json.totalDeposited),
+          totalWithdrawn: parseToBigint(json.totalWithdrawn),
+          realizedGain: parseToBigint(json.realizedGain),
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch cost basis');
         setData({
           costBasis: 0n,
           totalDeposited: 0n,
           totalWithdrawn: 0n,
           realizedGain: 0n,
         });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch cost basis');
       } finally {
         setIsLoading(false);
       }

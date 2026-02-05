@@ -3,10 +3,11 @@
 import { useState, useMemo } from 'react';
 import { formatUnits } from 'viem';
 import { PageHeader } from '@/components/layout';
-import { Card, CardHeader, CardTitle, Tabs, TabsList, TabsTrigger, Tooltip } from '@/components/ui';
+import { Card, CardHeader, CardTitle, Tabs, TabsList, TabsTrigger, Tooltip, Skeleton } from '@/components/ui';
 import { MetricCard } from '@/components/pool';
-import { AreaChart, BarChart } from '@/components/charts';
+import { AreaChart, BarChart, LineChart } from '@/components/charts';
 import { usePoolState } from '@/hooks';
+import { usePoolStateHistory } from '@/hooks/usePoolHistory';
 import { useExecutionPoolStats } from '@/hooks/operator/useExecutionPool';
 import { useAllInvoices, useOverdueInvoices } from '@/hooks/operator/useAllInvoices';
 import { useInvoiceStats } from '@/hooks/invoice/useInvoice';
@@ -29,6 +30,7 @@ export default function AnalyticsPage() {
   const { data: executionStats, isLoading: statsLoading } = useExecutionPoolStats();
   const { data: allInvoices, stats: invoiceStats, isLoading: invoicesLoading } = useAllInvoices();
   const { data: overdueInvoices } = useOverdueInvoices();
+  const { dataPoints: stateHistory, yieldChange, isLoading: historyLoading } = usePoolStateHistory(period as '7d' | '30d' | '90d' | 'all');
 
   const isLoading = poolLoading || statsLoading || invoicesLoading;
 
@@ -236,16 +238,36 @@ export default function AnalyticsPage() {
         />
       </div>
 
-      {/* Yield Over Time - Placeholder for historical data */}
+      {/* Yield Over Time */}
       <Card>
         <CardHeader>
           <CardTitle>Yield Over Time</CardTitle>
         </CardHeader>
-        <div className="h-[300px] flex flex-col items-center justify-center bg-slate-800/30 rounded-lg">
-          <Clock className="w-8 h-8 text-cool-gray mb-2" />
-          <p className="text-cool-gray text-body-sm">Historical data coming soon</p>
-          <p className="text-silver text-body-sm mt-1">Requires backend indexer</p>
-        </div>
+        {historyLoading ? (
+          <Skeleton className="h-[300px] w-full" />
+        ) : stateHistory.length === 0 ? (
+          <div className="h-[300px] flex flex-col items-center justify-center bg-slate-800/30 rounded-lg">
+            <Clock className="w-8 h-8 text-cool-gray mb-2" />
+            <p className="text-cool-gray text-body-sm">No historical data yet</p>
+            <p className="text-silver text-body-sm mt-1">Data will appear after pool activity</p>
+          </div>
+        ) : (
+          <AreaChart
+            data={stateHistory.map((s) => ({
+              timestamp: s.timestamp,
+              value: s.totalInvoiceYield + s.totalTreasuryYield,
+            }))}
+            color="#10B981"
+            height={300}
+            formatValue={(v) => formatCurrency(v)}
+            formatLabel={(t) =>
+              new Date(t * 1000).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+            }
+          />
+        )}
         <div className="mt-4 flex items-center gap-6 justify-center">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-primary rounded-full" />
@@ -256,20 +278,45 @@ export default function AnalyticsPage() {
             <span className="text-body-sm text-cool-gray">Treasury Yield</span>
           </div>
         </div>
+        {yieldChange.total > 0 && (
+          <p className="text-body-sm text-center text-success mt-2">
+            +{formatCurrency(yieldChange.total)} yield earned this period
+          </p>
+        )}
       </Card>
 
       {/* Two Column: Utilization History & Treasury Status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Utilization History - Placeholder */}
+        {/* Utilization History */}
         <Card>
           <CardHeader>
             <CardTitle>Pool Utilization History</CardTitle>
           </CardHeader>
-          <div className="h-[200px] flex flex-col items-center justify-center bg-slate-800/30 rounded-lg">
-            <Activity className="w-6 h-6 text-cool-gray mb-2" />
-            <p className="text-cool-gray text-body-sm">Historical data coming soon</p>
-            <p className="text-silver text-body-sm mt-1">Requires backend indexer</p>
-          </div>
+          {historyLoading ? (
+            <Skeleton className="h-[200px] w-full" />
+          ) : stateHistory.length === 0 ? (
+            <div className="h-[200px] flex flex-col items-center justify-center bg-slate-800/30 rounded-lg">
+              <Activity className="w-6 h-6 text-cool-gray mb-2" />
+              <p className="text-cool-gray text-body-sm">No historical data yet</p>
+              <p className="text-silver text-body-sm mt-1">Data will appear after pool activity</p>
+            </div>
+          ) : (
+            <LineChart
+              data={stateHistory.map((s) => ({
+                timestamp: s.timestamp,
+                value: s.utilizationRate,
+              }))}
+              color="#3B82F6"
+              height={200}
+              formatValue={(v) => `${v.toFixed(1)}%`}
+              formatLabel={(t) =>
+                new Date(t * 1000).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                })
+              }
+            />
+          )}
           <div className="mt-4 p-3 bg-slate-800/50 rounded-lg">
             <div className="flex justify-between items-center">
               <span className="text-body-sm text-cool-gray">Current Utilization</span>
