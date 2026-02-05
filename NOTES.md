@@ -44,3 +44,8 @@ ONCE YOU FINISH SEED FINANCE MVP
 [ ] - 
 [ ] - extensive document on hires, budget needed, everything - apply to VC firms
 [ ] - YC videos, prepare rough budget and planning for next months
+
+
+Questions to answer partners:
+[ ] - How are the fees calculated?
+[ ] - How are interest rates calculated?

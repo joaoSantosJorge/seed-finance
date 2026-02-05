@@ -50,7 +50,7 @@ const CHAINS: Record<string, ChainConfig> = {
 // Load deployment addresses
 const DEPLOYMENTS_PATH = path.join(
   __dirname,
-  "../multi-chain/deployments/multi-chain-addresses.json"
+  "../../deployments/multi-chain-addresses.json"
 );
 
 // ABIs (simplified)

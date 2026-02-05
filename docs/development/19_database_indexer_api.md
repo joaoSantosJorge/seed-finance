@@ -119,6 +119,10 @@ cd ../backend && npm install
 ### 2. Database Setup
 
 ```bash
+
+#Docker
+docker run --name seed-postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=seed_finance -p 5432:5432 -d postgres:16
+
 # Create PostgreSQL database
 createdb seed_finance
 

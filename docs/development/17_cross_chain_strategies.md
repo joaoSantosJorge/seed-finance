@@ -168,6 +168,28 @@ npx ts-node relay.ts
 
 # Terminal 4: Run tests
 MULTI_ANVIL=true forge test --match-contract CrossChainIntegration
+
+
+#Windows:
+  To run on Windows:
+
+  # Navigate to the contracts directory
+  cd C:\projects\seed-finance\contracts
+
+  # Start the multi-anvil environment
+  .\scripts\multi-chain\start-multi-anvil.ps1
+
+  # After anvils are running, deploy contracts
+  .\scripts\multi-chain\deploy-multi-chain.ps1
+
+  # To stop all anvil instances
+  .\scripts\multi-chain\stop-multi-anvil.ps1
+
+   # Terminal 4: Run tests
+   $env:MULTI_ANVIL="true"; forge test --match-contract CrossChainIntegration 
+
+  Note: If you get an execution policy error, you may need to run this first:
+  Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
 ```
 
 ### Testnet Testing
