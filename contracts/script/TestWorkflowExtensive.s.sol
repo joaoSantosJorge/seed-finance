@@ -530,13 +530,17 @@ contract TestWorkflowExtensive is Script {
         uint256[5] memory buyerRepaid;
 
         // Group repayments by buyer for efficiency
+        // NOTE: Must go through InvoiceDiamond.processRepayment() to update both
+        // the Diamond's invoice status AND the ExecutionPool's funding record
         for (uint256 b = 0; b < 5; b++) {
             vm.startBroadcast(BUYER_PKS[b]);
 
             for (uint256 i = 0; i < allInvoices.length; i++) {
                 if (allInvoices[i].buyerIndex == b) {
-                    usdc.approve(address(executionPool), allInvoices[i].faceValue);
-                    executionPool.repayInvoice(allInvoices[i].id);
+                    // Approve the Diamond (not ExecutionPool) - it transfers USDC to ExecutionPool
+                    usdc.approve(address(invoiceDiamond), allInvoices[i].faceValue);
+                    // Call processRepayment through the Diamond to update invoice status to Paid
+                    RepaymentFacet(address(invoiceDiamond)).processRepayment(allInvoices[i].id);
                     buyerRepaid[b] += allInvoices[i].faceValue;
                 }
             }
@@ -549,6 +553,17 @@ contract TestWorkflowExtensive is Script {
         console.log("");
         console.log("  Total repaid:", totalFaceValue / 1e6, "USDC");
         console.log("  ExecutionPool activeInvoices:", executionPool.activeInvoices());
+
+        // Verify all invoice statuses were updated to Paid in the Diamond
+        uint256 paidCount = 0;
+        for (uint256 i = 0; i < allInvoices.length; i++) {
+            IInvoiceDiamond.InvoiceView memory inv = ViewFacet(address(invoiceDiamond)).getInvoice(allInvoices[i].id);
+            if (inv.status == LibInvoiceStorage.InvoiceStatus.Paid && inv.paidAt > 0) {
+                paidCount++;
+            }
+        }
+        console.log("  Invoices with Paid status:", paidCount, "/ 20");
+        require(paidCount == 20, "All 20 invoices should have Paid status");
         console.log("");
     }
 

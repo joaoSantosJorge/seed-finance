@@ -421,9 +421,13 @@ contract TestWorkflow is Script {
         console.log("  Buyer USDC before:", buyerBalanceBefore / 1e6, "USDC");
         console.log("  Pool totalAssets before:", poolAssetsBefore / 1e6, "USDC");
 
+        // NOTE: Must go through InvoiceDiamond.processRepayment() to update both
+        // the Diamond's invoice status AND the ExecutionPool's funding record
         vm.startBroadcast(BUYER_PK);
-        usdc.approve(address(executionPool), INVOICE_FACE_VALUE);
-        executionPool.repayInvoice(invoiceId);
+        // Approve the Diamond (not ExecutionPool) - it transfers USDC to ExecutionPool
+        usdc.approve(address(invoiceDiamond), INVOICE_FACE_VALUE);
+        // Call processRepayment through the Diamond to update invoice status to Paid
+        RepaymentFacet(address(invoiceDiamond)).processRepayment(invoiceId);
         vm.stopBroadcast();
 
         uint256 buyerBalanceAfter = usdc.balanceOf(BUYER);
@@ -441,6 +445,12 @@ contract TestWorkflow is Script {
         require(buyerBalanceBefore - buyerBalanceAfter == INVOICE_FACE_VALUE, "Buyer should pay face value");
         require(executionPool.activeInvoices() == 0, "No active invoices should remain");
         require(liquidityPool.totalDeployed() == 0, "No capital should be deployed");
+
+        // Verify invoice status was updated to Paid in the Diamond
+        IInvoiceDiamond.InvoiceView memory paidInvoice = ViewFacet(address(invoiceDiamond)).getInvoice(invoiceId);
+        require(paidInvoice.status == LibInvoiceStorage.InvoiceStatus.Paid, "Invoice status should be Paid");
+        require(paidInvoice.paidAt > 0, "Invoice paidAt should be set");
+        console.log("  Invoice status: Paid (verified)");
     }
 
     function _printFinalSummary() internal view {
