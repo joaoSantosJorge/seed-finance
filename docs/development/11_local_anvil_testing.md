@@ -63,7 +63,7 @@ For experienced users, here's the complete setup in one terminal session:
 ```bash
 # Terminal 1: Start Anvil
 cd contracts
-anvil --host 0.0.0.0 --accounts 10 --balance 10000 --state state.json
+anvil --host 0.0.0.0 --accounts 15 --balance 10000 --state state.json
 
 # Terminal 2: Deploy contracts
 cd contracts
@@ -134,7 +134,7 @@ By default, Anvil resets when restarted. To persist state across restarts:
 
 ```bash
 cd contracts
-anvil --host 0.0.0.0 --accounts 10 --balance 10000 --state state.json
+anvil --host 0.0.0.0 --accounts 15 --balance 10000 --load-state anvil-state.json
 ```
 
 This saves blockchain state to `contracts/state.json` and reloads it on restart.

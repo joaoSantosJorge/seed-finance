@@ -33,3 +33,8 @@ Thumbs.db
 
 # Claude Code
 .claude/
+
+# Anvil state files
+contracts/anvil-state.json
+contracts/state.bin
+contracts/state.json

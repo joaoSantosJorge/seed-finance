@@ -17,15 +17,18 @@ TODO
 [x] - create suppliers and clients contracts
 [x] - check if it is working (11_local_anvil_testing)
 [x] - simulate 20 invoices (different buyers (5 suppliers, 5 buyers))
-[ ] - financier dashboar
-[ ] - time problem...
-[ ] - supplier dashboard
-[ ] - buyer dashboard
-[ ] - operator dashboard
-[ ] - deploy backend and frontend in cloud (keep working with anvil)
+[x] - financier dashboar
+[x] - time problem...
+[x] - supplier dashboard
+[x] - buyer dashboard
+[ ] - operator dashboard -> allocate funds to strategy
+[ ] - operator dashboard -> allocate funds to solana via LI.FI
+[ ] - yield calculation and strategies
+[ ] - DB and phase 3
 [ ] - strategies dashboard
 [ ] - LI.FI
 [ ] - ARC and usdc
+[ ] - deploy backend and frontend in cloud (keep working with anvil)
 [ ] - cash flow window. what does it look like?
 [ ] - videos
 [ ] - presentation
