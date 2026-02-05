@@ -1,0 +1,151 @@
+// Prisma schema for Seed Finance indexer data
+// This is a symlink/copy of frontend/prisma/schema.prisma
+// Run: npx prisma generate && npx prisma db push
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ Share Price Snapshots ============
+// Tracks share price over time for historical charts
+
+model SharePriceSnapshot {
+  id          Int      @id @default(autoincrement())
+  blockNumber BigInt
+  timestamp   DateTime
+  totalAssets BigInt   // Pool total assets in USDC (6 decimals)
+  totalSupply BigInt   // Total SEED shares (6 decimals)
+  sharePrice  BigInt   // Value of 1e6 shares in USDC (6 decimals)
+  createdAt   DateTime @default(now())
+
+  @@unique([blockNumber])
+  @@index([timestamp])
+  @@map("share_price_snapshots")
+}
+
+// ============ Pool State Snapshots ============
+// Full pool state for analytics (utilization, yields, etc.)
+
+model PoolStateSnapshot {
+  id                 Int      @id @default(autoincrement())
+  blockNumber        BigInt
+  timestamp          DateTime
+  totalAssets        BigInt
+  totalSupply        BigInt
+  totalDeployed      BigInt   // Capital in active invoices
+  totalInTreasury    BigInt   // Capital in treasury (USYC)
+  availableLiquidity BigInt   // Liquid USDC in pool
+  utilizationRate    Int      // Basis points (0-10000)
+  activeInvoices     Int
+  totalInvoiceYield  BigInt   // Cumulative invoice yield
+  totalTreasuryYield BigInt   // Cumulative treasury yield
+  createdAt          DateTime @default(now())
+
+  @@unique([blockNumber])
+  @@index([timestamp])
+  @@map("pool_state_snapshots")
+}
+
+// ============ Yield Events ============
+// Individual yield events from invoices and treasury
+
+model YieldEvent {
+  id          Int      @id @default(autoincrement())
+  eventType   String   // 'invoice' | 'treasury'
+  invoiceId   BigInt?  // Only for invoice yield
+  principal   BigInt?  // Only for invoice yield
+  yieldAmount BigInt
+  blockNumber BigInt
+  txHash      String
+  timestamp   DateTime
+  createdAt   DateTime @default(now())
+
+  @@unique([txHash, eventType])
+  @@index([timestamp])
+  @@index([eventType])
+  @@map("yield_events")
+}
+
+// ============ User Transactions ============
+// Deposit and withdraw events per user
+
+model UserTransaction {
+  id               Int      @id @default(autoincrement())
+  userAddress      String   // Lowercase address
+  txHash           String
+  eventType        String   // 'deposit' | 'withdraw'
+  assets           BigInt   // USDC amount (6 decimals)
+  shares           BigInt   // SEED shares (6 decimals)
+  sharePriceAtTime BigInt   // Share price when tx occurred
+  blockNumber      BigInt
+  logIndex         Int      @default(0)
+  timestamp        DateTime
+  createdAt        DateTime @default(now())
+
+  @@unique([txHash, logIndex])
+  @@index([userAddress, timestamp])
+  @@index([timestamp])
+  @@map("user_transactions")
+}
+
+// ============ User Positions ============
+// Aggregate position data per user
+
+model UserPosition {
+  id               Int      @id @default(autoincrement())
+  userAddress      String   @unique // Lowercase address
+  totalDeposited   BigInt   // Sum of all deposits
+  totalWithdrawn   BigInt   // Sum of all withdrawals
+  costBasis        BigInt   // Current FIFO cost basis of held shares
+  realizedGain     BigInt   // Cumulative realized profit from withdrawals
+  firstDepositAt   DateTime
+  lastActivityAt   DateTime
+  transactionCount Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  shareLots UserShareLot[]
+
+  @@index([lastActivityAt])
+  @@map("user_positions")
+}
+
+// ============ User Share Lots ============
+// FIFO tracking for cost basis calculation
+
+model UserShareLot {
+  id           Int          @id @default(autoincrement())
+  userAddress  String       // Lowercase address
+  shares       BigInt       // Remaining shares in this lot
+  costPerShare BigInt       // Cost per share when acquired (6 decimals)
+  timestamp    DateTime     // When this lot was acquired
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  position UserPosition @relation(fields: [userAddress], references: [userAddress], onDelete: Cascade)
+
+  @@index([userAddress, timestamp])
+  @@map("user_share_lots")
+}
+
+// ============ Indexer State ============
+// Tracks indexer progress for resumability
+
+model IndexerState {
+  id                  Int      @id @default(autoincrement())
+  indexerName         String   @unique @default("pool_indexer")
+  lastProcessedBlock  BigInt
+  lastProcessedTime   DateTime
+  isRunning           Boolean  @default(false)
+  errorCount          Int      @default(0)
+  lastError           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("indexer_state")
+}

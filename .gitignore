@@ -38,3 +38,6 @@ Thumbs.db
 contracts/anvil-state.json
 contracts/state.bin
 contracts/state.json
+
+# Local deployment artifacts
+contracts/deployments/
