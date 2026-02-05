@@ -1,0 +1,19 @@
+{
+  "name": "cross-chain-relay",
+  "version": "1.0.0",
+  "description": "Cross-chain relay service for Seed Finance multi-anvil testing",
+  "main": "relay.ts",
+  "scripts": {
+    "start": "ts-node relay.ts",
+    "dev": "ts-node-dev relay.ts"
+  },
+  "dependencies": {
+    "ethers": "^6.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.3.0"
+  }
+}
