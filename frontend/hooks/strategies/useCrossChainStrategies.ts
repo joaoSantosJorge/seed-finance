@@ -113,18 +113,9 @@ interface StrategyConfig {
 
 // Configurable strategy addresses (would come from env/config in production)
 export function getStrategyAddresses(): StrategyConfig[] {
-  const lifiStrategy = process.env.NEXT_PUBLIC_LIFI_VAULT_STRATEGY_ADDRESS as Address | undefined;
   const arcStrategy = process.env.NEXT_PUBLIC_ARC_USYC_STRATEGY_ADDRESS as Address | undefined;
 
   const strategies: StrategyConfig[] = [];
-
-  if (lifiStrategy && lifiStrategy !== '0x0000000000000000000000000000000000000000') {
-    strategies.push({
-      address: lifiStrategy,
-      destinationChain: 'Arbitrum',
-      yieldSource: 'Aave V3',
-    });
-  }
 
   if (arcStrategy && arcStrategy !== '0x0000000000000000000000000000000000000000') {
     strategies.push({

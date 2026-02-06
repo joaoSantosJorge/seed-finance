@@ -972,7 +972,7 @@ function transfer(address to, uint256 amount) external {
 |----------|-------|----------|
 | Core Logic | InvoiceDiamond.sol, all facets | Critical |
 | Token Handling | LiquidityPool.sol, ExecutionPool.sol | Critical |
-| External Integrations | CCTPReceiver.sol, LiFiReceiver.sol | High |
+| External Integrations | CCTPReceiver.sol | High |
 | Treasury | TreasuryManager.sol, strategies | High |
 | Admin Functions | All onlyOwner/onlyAdmin | Medium |
 

@@ -19,7 +19,6 @@ contract SmartRouterTest is Test {
     address public owner = address(this);
     address public user = address(0x1);
     address public cctpReceiver = address(0x2);
-    address public lifiReceiver = address(0x3);
     address public beneficiary = address(0x4);
 
     // Test constants
@@ -47,7 +46,6 @@ contract SmartRouterTest is Test {
         // Mint USDC to test accounts
         usdc.mint(user, 1_000_000e6);
         usdc.mint(cctpReceiver, 1_000_000e6);
-        usdc.mint(lifiReceiver, 1_000_000e6);
         usdc.mint(address(router), 1_000_000e6); // For handler tests
 
         // Approve router to spend user's USDC
@@ -194,63 +192,6 @@ contract SmartRouterTest is Test {
         newRouter.handleCCTPDeposit(beneficiary, DEPOSIT_AMOUNT, 0);
     }
 
-    // ============ LiFi Handler Tests ============
-
-    function test_HandleLiFiDeposit_Success() public {
-        // Set up LiFi receiver
-        router.setLiFiReceiver(lifiReceiver);
-
-        bytes32 transferId = bytes32("transfer123");
-
-        vm.prank(lifiReceiver);
-        uint256 shares = router.handleLiFiDeposit(beneficiary, DEPOSIT_AMOUNT, transferId);
-
-        assertGt(shares, 0);
-        assertEq(pool.balanceOf(beneficiary), shares);
-        assertEq(router.totalRouted(), DEPOSIT_AMOUNT);
-        assertEq(router.depositsByMethod(SmartRouter.DepositMethod.LiFi), 1);
-    }
-
-    function test_HandleLiFiDeposit_RevertUnauthorizedHandler() public {
-        bytes32 transferId = bytes32("transfer123");
-
-        vm.prank(lifiReceiver);
-        vm.expectRevert(abi.encodeWithSelector(
-            SmartRouter.UnauthorizedHandler.selector,
-            lifiReceiver
-        ));
-        router.handleLiFiDeposit(beneficiary, DEPOSIT_AMOUNT, transferId);
-    }
-
-    function test_HandleLiFiDeposit_RevertZeroAmount() public {
-        router.setLiFiReceiver(lifiReceiver);
-
-        vm.prank(lifiReceiver);
-        vm.expectRevert(SmartRouter.ZeroAmount.selector);
-        router.handleLiFiDeposit(beneficiary, 0, bytes32(0));
-    }
-
-    function test_HandleLiFiDeposit_RevertZeroBeneficiary() public {
-        router.setLiFiReceiver(lifiReceiver);
-
-        vm.prank(lifiReceiver);
-        vm.expectRevert(SmartRouter.ZeroAddress.selector);
-        router.handleLiFiDeposit(address(0), DEPOSIT_AMOUNT, bytes32(0));
-    }
-
-    function test_HandleLiFiDeposit_RevertInsufficientBalance() public {
-        SmartRouter newRouter = new SmartRouter(
-            address(usdc),
-            address(pool),
-            MIN_DEPOSIT
-        );
-        newRouter.setLiFiReceiver(lifiReceiver);
-
-        vm.prank(lifiReceiver);
-        vm.expectRevert(SmartRouter.InsufficientBalance.selector);
-        newRouter.handleLiFiDeposit(beneficiary, DEPOSIT_AMOUNT, bytes32(0));
-    }
-
     // ============ Admin Functions Tests ============
 
     function test_SetCCTPReceiver_Success() public {
@@ -279,28 +220,6 @@ contract SmartRouterTest is Test {
         vm.prank(user);
         vm.expectRevert();
         router.setCCTPReceiver(cctpReceiver);
-    }
-
-    function test_SetLiFiReceiver_Success() public {
-        router.setLiFiReceiver(lifiReceiver);
-
-        assertEq(router.lifiReceiver(), lifiReceiver);
-        assertTrue(router.isAuthorizedHandler(lifiReceiver));
-    }
-
-    function test_SetLiFiReceiver_ReplacePrevious() public {
-        router.setLiFiReceiver(lifiReceiver);
-        address newReceiver = address(0x11);
-        router.setLiFiReceiver(newReceiver);
-
-        assertEq(router.lifiReceiver(), newReceiver);
-        assertTrue(router.isAuthorizedHandler(newReceiver));
-        assertFalse(router.isAuthorizedHandler(lifiReceiver));
-    }
-
-    function test_SetLiFiReceiver_RevertZeroAddress() public {
-        vm.expectRevert(SmartRouter.ZeroAddress.selector);
-        router.setLiFiReceiver(address(0));
     }
 
     function test_SetHandler_Success() public {
@@ -383,14 +302,12 @@ contract SmartRouterTest is Test {
             uint256 totalRouted,
             uint256 directCount,
             uint256 cctpCount,
-            uint256 lifiCount,
             uint256 currentBalance
         ) = router.getStats();
 
         assertEq(totalRouted, DEPOSIT_AMOUNT + DEPOSIT_AMOUNT / 2);
         assertEq(directCount, 1);
         assertEq(cctpCount, 1);
-        assertEq(lifiCount, 0);
         assertGt(currentBalance, 0);
     }
 
@@ -418,7 +335,6 @@ contract SmartRouterTest is Test {
 
         assertEq(router.getDepositCount(SmartRouter.DepositMethod.Direct), 1);
         assertEq(router.getDepositCount(SmartRouter.DepositMethod.CCTP), 0);
-        assertEq(router.getDepositCount(SmartRouter.DepositMethod.LiFi), 0);
     }
 
     function test_IsAuthorizedHandler() public {

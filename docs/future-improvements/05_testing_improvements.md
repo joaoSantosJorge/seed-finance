@@ -31,7 +31,6 @@ This document outlines a comprehensive testing strategy for Seed Finance, coveri
 | LiquidityPool | 90% | 95% | 5% |
 | TreasuryManager | 85% | 95% | 10% |
 | CCTPReceiver | 90% | 95% | 5% |
-| LiFiReceiver | 90% | 95% | 5% |
 | Backend Services | 30% | 90% | 60% |
 | Integration Tests | 40% | 80% | 40% |
 

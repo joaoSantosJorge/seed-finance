@@ -6,7 +6,6 @@ This document describes the implementation of cross-chain treasury strategies th
 
 | Strategy | Bridge | Destination | Yield Source | Est. APY |
 |----------|--------|-------------|--------------|----------|
-| **LiFiVaultStrategy** | LI.FI | Arbitrum | Aave V3 USDC | ~4% |
 | **ArcUSYCStrategy** | CCTP | Arc (Domain 26) | USYC T-bills | ~4.5% |
 
 ## Architecture
@@ -14,11 +13,9 @@ This document describes the implementation of cross-chain treasury strategies th
 ```
 BASE (Home Chain)
 ├── TreasuryManager
-│   ├── LiFiVaultStrategy ─► LI.FI ─► Arbitrum ──► Aave V3
 │   └── ArcUSYCStrategy ──► CCTP ──► Arc ──────► USYC
 │
 REMOTE CHAINS
-├── Arbitrum: LiFiVaultAgent → Aave V3 Pool
 └── Arc: ArcUSYCAgent → USYC Vault
 ```
 
@@ -41,16 +38,13 @@ REMOTE CHAINS
   - Keeper authorization
 
 #### Strategy Contracts (Base Chain)
-- `contracts/src/strategies/LiFiVaultStrategy.sol` - LI.FI bridge to Arbitrum
 - `contracts/src/strategies/ArcUSYCStrategy.sol` - CCTP bridge to Arc
 
 #### Remote Agent Contracts
-- `contracts/src/strategies/remote/LiFiVaultAgent.sol` - Arbitrum (Aave V3)
 - `contracts/src/strategies/remote/ArcUSYCAgent.sol` - Arc (USYC)
 
 #### Mock Contracts (Testing)
 - `contracts/test/mocks/crosschain/MockCCTPMessageTransmitter.sol`
-- `contracts/test/mocks/crosschain/MockLiFiBridgeExecutor.sol`
 - `contracts/test/mocks/crosschain/MockAavePool.sol`
 - `contracts/test/mocks/crosschain/MockUSYCArc.sol`
 
@@ -82,7 +76,6 @@ REMOTE CHAINS
    ```
 
 2. **Strategy bridges USDC to remote chain**
-   - LiFi: Uses LI.FI Diamond for optimal routing
    - Arc: Burns USDC via CCTP TokenMessenger
 
 3. **Keeper monitors bridge events and calls remote agent**
@@ -133,7 +126,6 @@ totalValue = lastReportedValue + pendingDeposits - pendingWithdrawals
    ```
 
 4. **Agent withdraws and bridges back**
-   - LiFi: Uses LI.FI to bridge USDC to Base
    - Arc: Burns USDC via CCTP
 
 5. **Keeper receives funds on home strategy**
@@ -205,17 +197,10 @@ MULTI_ANVIL=true forge test --match-contract CrossChainIntegration
 
 ```bash
 # Strategy Addresses (Frontend)
-NEXT_PUBLIC_LIFI_VAULT_STRATEGY_ADDRESS=0x...
 NEXT_PUBLIC_ARC_USYC_STRATEGY_ADDRESS=0x...
 ```
 
 ### Contract Addresses
-
-#### LiFi (Mainnet)
-- LI.FI Diamond (Base): `0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE`
-- LI.FI Diamond (Arbitrum): `0x1231DEB6f5749EF6cE6943a275A1D3E7486F4EaE`
-- Aave V3 Pool (Arbitrum): `0x794a61358D6845594F94dc1DB02A252b5b4814aD`
-- aUSDC (Arbitrum): `0x724dc807b04555b71ed48a6896b6F41593b8C637`
 
 #### CCTP (Mainnet)
 - TokenMessenger (Base): `0x1682Ae6375C4E4A97e4B583BC394c861A46D8962`
@@ -238,7 +223,7 @@ NEXT_PUBLIC_ARC_USYC_STRATEGY_ADDRESS=0x...
    - Withdrawals take 5-30 minutes to return
 
 4. **Bridge Risk** - Cross-chain operations have additional risks:
-   - Bridge security (LI.FI, CCTP)
+   - Bridge security (CCTP)
    - Remote chain stability
    - Oracle/attestation delays
 
@@ -247,7 +232,6 @@ NEXT_PUBLIC_ARC_USYC_STRATEGY_ADDRESS=0x...
 - `contracts/src/interfaces/ITreasuryStrategy.sol` - Base interface
 - `contracts/src/strategies/BaseTreasuryStrategy.sol` - Local strategy base
 - `contracts/src/integrations/CCTPReceiver.sol` - CCTP patterns
-- `contracts/src/integrations/LiFiReceiver.sol` - LI.FI patterns
 
 ## Future Improvements
 

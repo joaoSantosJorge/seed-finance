@@ -2,9 +2,7 @@
  * Cross-Chain Relay Service
  *
  * Monitors events on multiple Anvil chains and relays messages between them.
- * Simulates the behavior of:
- * - Circle's CCTP Attestation Service
- * - LI.FI bridge executors
+ * Simulates the behavior of Circle's CCTP Attestation Service.
  *
  * Usage:
  *   npx ts-node relay.ts
@@ -34,11 +32,6 @@ const CHAINS: Record<string, ChainConfig> = {
     rpc: "http://localhost:8545",
     domain: 6,
   },
-  arbitrum: {
-    name: "Arbitrum",
-    chainId: 31338,
-    rpc: "http://localhost:8546",
-  },
   arc: {
     name: "Arc",
     chainId: 31339,
@@ -54,13 +47,6 @@ const DEPLOYMENTS_PATH = path.join(
 );
 
 // ABIs (simplified)
-const LIFI_BRIDGE_ABI = [
-  "event BridgeInitiated(bytes32 indexed transferId, address indexed sender, address indexed receiver, address token, uint256 amount, uint256 destinationChainId)",
-  "event BridgeCompleted(bytes32 indexed transferId, address indexed receiver, uint256 amount)",
-  "function completeBridge(bytes32 transferId, address destinationToken) external",
-  "function getPendingTransfer(bytes32 transferId) external view returns (tuple(address sender, address receiver, address token, uint256 amount, uint256 destinationChainId, uint256 timestamp, bool completed))",
-];
-
 const CCTP_ABI = [
   "event DepositForBurn(uint64 indexed nonce, address indexed burnToken, uint256 amount, address indexed depositor, bytes32 mintRecipient, uint32 destinationDomain, bytes32 destinationTokenMessenger, bytes32 destinationCaller)",
   "event MessageSent(bytes message)",
@@ -79,16 +65,8 @@ const ERC20_ABI = [
 interface Deployments {
   base: {
     usdc: string;
-    lifiBridge: string;
     cctp: string;
-    lifiVaultStrategy: string;
     arcUSYCStrategy: string;
-  };
-  arbitrum: {
-    usdc: string;
-    aavePool: string;
-    lifiBridge: string;
-    lifiVaultAgent: string;
   };
   arc: {
     usdc: string;
@@ -125,8 +103,6 @@ class CrossChainRelay {
 
     // Start listeners
     await Promise.all([
-      this.listenLiFiBridgeEvents("base"),
-      this.listenLiFiBridgeEvents("arbitrum"),
       this.listenCCTPEvents("base"),
       this.listenCCTPEvents("arc"),
     ]);
@@ -163,114 +139,6 @@ class CrossChainRelay {
       }
     }
     console.log("");
-  }
-
-  // ============ LI.FI Bridge Relay ============
-
-  private async listenLiFiBridgeEvents(chainKey: string) {
-    const config = CHAINS[chainKey];
-    let bridgeAddress: string;
-
-    if (chainKey === "base") {
-      bridgeAddress = deployments.base.lifiBridge;
-    } else if (chainKey === "arbitrum") {
-      bridgeAddress = deployments.arbitrum.lifiBridge;
-    } else {
-      return;
-    }
-
-    const bridge = new Contract(
-      bridgeAddress,
-      LIFI_BRIDGE_ABI,
-      providers[chainKey]
-    );
-
-    console.log(
-      `👀 Listening for LI.FI bridge events on ${config.name}...`
-    );
-
-    bridge.on(
-      "BridgeInitiated",
-      async (
-        transferId: string,
-        sender: string,
-        receiver: string,
-        token: string,
-        amount: bigint,
-        destinationChainId: bigint
-      ) => {
-        const key = `lifi-${transferId}`;
-        if (this.processedTransfers.has(key)) return;
-        this.processedTransfers.add(key);
-
-        console.log(`\n📦 LI.FI Bridge Initiated on ${config.name}:`);
-        console.log(`   Transfer ID: ${transferId}`);
-        console.log(`   Amount: ${ethers.formatUnits(amount, 6)} USDC`);
-        console.log(`   Destination Chain: ${destinationChainId}`);
-        console.log(`   Receiver: ${receiver}`);
-
-        // Determine destination
-        let destChain: string;
-        if (destinationChainId === 31338n) {
-          destChain = "arbitrum";
-        } else if (destinationChainId === 31337n) {
-          destChain = "base";
-        } else {
-          console.log(`   ⚠️ Unknown destination chain`);
-          return;
-        }
-
-        // Relay the bridge
-        await this.completeLiFiBridge(transferId, receiver, amount, destChain);
-      }
-    );
-  }
-
-  private async completeLiFiBridge(
-    transferId: string,
-    receiver: string,
-    amount: bigint,
-    destChain: string
-  ) {
-    console.log(`   🔄 Relaying to ${CHAINS[destChain].name}...`);
-
-    try {
-      let destBridge: string;
-      let destUsdc: string;
-
-      if (destChain === "arbitrum") {
-        destBridge = deployments.arbitrum.lifiBridge;
-        destUsdc = deployments.arbitrum.usdc;
-      } else if (destChain === "base") {
-        destBridge = deployments.base.lifiBridge;
-        destUsdc = deployments.base.usdc;
-      } else {
-        throw new Error(`Unknown chain: ${destChain}`);
-      }
-
-      // First, ensure the bridge has enough USDC
-      const usdc = new Contract(destUsdc, ERC20_ABI, wallets[destChain]);
-      const bridgeBalance = await usdc.balanceOf(destBridge);
-
-      if (bridgeBalance < amount) {
-        console.log(`   📝 Minting additional USDC to bridge...`);
-        const mintTx = await usdc.mint(destBridge, amount);
-        await mintTx.wait();
-      }
-
-      // Complete the bridge
-      const bridge = new Contract(
-        destBridge,
-        LIFI_BRIDGE_ABI,
-        wallets[destChain]
-      );
-      const tx = await bridge.completeBridge(transferId, destUsdc);
-      await tx.wait();
-
-      console.log(`   ✅ Bridge completed! Funds delivered to ${receiver}`);
-    } catch (error) {
-      console.error(`   ❌ Bridge relay failed:`, error);
-    }
   }
 
   // ============ CCTP Relay ============

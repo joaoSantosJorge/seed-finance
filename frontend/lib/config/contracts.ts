@@ -8,7 +8,6 @@ const defaults: Record<Environment, ContractAddresses> = {
     usdc: ZERO, // Set via env var after Anvil deploy
     liquidityPool: ZERO,
     treasuryManager: ZERO,
-    lifiReceiver: ZERO,
     invoiceDiamond: ZERO,
     executionPool: ZERO,
   },
@@ -16,7 +15,6 @@ const defaults: Record<Environment, ContractAddresses> = {
     usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as Address,
     liquidityPool: ZERO, // Set via env var after deploy
     treasuryManager: ZERO,
-    lifiReceiver: ZERO, // Set via env var after deploy
     invoiceDiamond: ZERO, // Set via env var after deploy
     executionPool: ZERO, // Set via env var after deploy
   },
@@ -24,7 +22,6 @@ const defaults: Record<Environment, ContractAddresses> = {
     usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address,
     liquidityPool: ZERO,
     treasuryManager: ZERO,
-    lifiReceiver: ZERO,
     invoiceDiamond: ZERO,
     executionPool: ZERO,
   },
@@ -40,9 +37,6 @@ export function getContractAddresses(env: Environment): ContractAddresses {
     treasuryManager:
       (process.env.NEXT_PUBLIC_TREASURY_MANAGER_ADDRESS as Address) ||
       d.treasuryManager,
-    lifiReceiver:
-      (process.env.NEXT_PUBLIC_LIFI_RECEIVER_ADDRESS as Address) ||
-      d.lifiReceiver,
     invoiceDiamond:
       (process.env.NEXT_PUBLIC_INVOICE_DIAMOND_ADDRESS as Address) ||
       d.invoiceDiamond,
