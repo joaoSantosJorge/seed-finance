@@ -13,10 +13,10 @@ export default function OperatorTreasuryPage() {
   const { data: treasuryManagerAddress, isLoading } = useTreasuryManager();
 
   const explorerUrl =
-    chainId === 8453
-      ? 'https://basescan.org'
-      : chainId === 84532
-        ? 'https://sepolia.basescan.org'
+    chainId === 1243
+      ? 'https://arcscan.app'
+      : chainId === 5042002
+        ? 'https://testnet.arcscan.app'
         : 'https://etherscan.io';
 
   const isConfigured =

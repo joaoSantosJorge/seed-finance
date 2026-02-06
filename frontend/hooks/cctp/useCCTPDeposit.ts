@@ -98,10 +98,11 @@ export const CCTP_DOMAIN_IDS: Record<number, number> = {
   137: 7,     // Polygon
   84532: 6,   // Base Sepolia
   11155111: 0, // Ethereum Sepolia
+  5042002: 10, // Arc Testnet (CCTP V2 domain — verify with Circle docs)
 };
 
-// Base domain ID (destination)
-const BASE_DOMAIN_ID = 6;
+// Arc domain ID (destination)
+const ARC_DOMAIN_ID = 10; // TODO: Verify Arc CCTP domain ID with Circle
 
 // ============ ABIs ============
 
@@ -251,7 +252,7 @@ export function useCCTPDeposit(sourceChainId: number) {
         functionName: 'depositForBurn',
         args: [
           params.amount,
-          BASE_DOMAIN_ID,
+          ARC_DOMAIN_ID,
           mintRecipient,
           config.usdcAddress,
         ],

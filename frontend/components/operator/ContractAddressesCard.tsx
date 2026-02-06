@@ -69,10 +69,10 @@ export function ContractAddressesCard() {
 
   // Determine explorer URL based on chain
   const explorerUrl =
-    chainId === 8453
-      ? 'https://basescan.org'
-      : chainId === 84532
-        ? 'https://sepolia.basescan.org'
+    chainId === 1243
+      ? 'https://arcscan.app'
+      : chainId === 5042002
+        ? 'https://testnet.arcscan.app'
         : 'https://etherscan.io';
 
   // Parse diamond addresses (executionPool, liquidityPool, usdc)
@@ -131,7 +131,7 @@ export function ContractAddressesCard() {
 
       <div className="mt-4 pt-4 border-t-2 border-[var(--border-color)]">
         <p className="text-body-sm text-cool-gray">
-          Network: {chainId === 8453 ? 'Base Mainnet' : chainId === 84532 ? 'Base Sepolia' : `Chain ${chainId}`}
+          Network: {chainId === 1243 ? 'Arc Mainnet' : chainId === 5042002 ? 'Arc Testnet' : `Chain ${chainId}`}
         </p>
       </div>
     </Card>

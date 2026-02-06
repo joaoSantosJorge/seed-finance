@@ -9,8 +9,16 @@
  * when testing time-dependent features like yield accrual.
  */
 
-import { createPublicClient, http, PublicClient } from 'viem';
-import { foundry, baseSepolia, base } from 'viem/chains';
+import { createPublicClient, http, PublicClient, defineChain } from 'viem';
+import { foundry } from 'viem/chains';
+
+// Arc chain definition (viem doesn't have Arc built-in yet)
+const arcTestnet = defineChain({
+  id: 5042002,
+  name: 'Arc Testnet',
+  nativeCurrency: { decimals: 18, name: 'USD Coin', symbol: 'USDC' },
+  rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } },
+});
 
 // ============ Configuration ============
 
@@ -102,10 +110,8 @@ class TimeProvider {
     switch (this.config.chainId) {
       case 31337:
         return foundry;
-      case 84532:
-        return baseSepolia;
-      case 8453:
-        return base;
+      case 5042002:
+        return arcTestnet;
       default:
         return foundry;
     }
