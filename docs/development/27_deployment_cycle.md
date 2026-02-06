@@ -517,10 +517,10 @@ All `forge script` and `cast send` commands use `--account arc-deployer` which p
 | LiquidityPool | `0xB67db96eEbf1D30D95a382535afBB2375ECf0219` | DeployArcTestnet |
 | InvoiceDiamond | `0xe73911fbe91a0f76b20b53a8bd7d4c84c5532da6` | DeployArcTestnet |
 | ExecutionPool | `0xf1389407cb618990b838d549c226de9ec2d447f0` | DeployArcTestnet |
-| TreasuryManager | `0x4815708E786d7355D460CcA07158866B28338885` | DeployTreasury (needs redeploy — double-transfer bug) |
-| USYCStrategy | `0x6D0fE2C06878C08F2a1bdb4d3bA5245e017e36ae` | DeployTreasury (needs redeploy with TreasuryManager) |
+| TreasuryManager | `0x61AD0D0E1fe544303F9d60D966A983052eFa46e9` | DeployTreasury (redeployed after double-transfer fix) |
+| USYCStrategy | `0x29185ab3155eFE0209a78727B2fb70D98c101426` | DeployTreasury (redeployed with TreasuryManager) |
 
-> **Note:** TreasuryManager and USYCStrategy addresses will change after redeployment following the double-transfer bug fix (commit `6f3435a`). Update this table after redeploying.
+> **Updated:** TreasuryManager and USYCStrategy were redeployed after the double-transfer bug fix (commit `6f3435a`). Addresses above are current.
 
 ### Verification on Arcscan
 
