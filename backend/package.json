@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "indexer": "tsx src/indexer/runIndexer.ts",
-    "indexer:dev": "tsx watch src/indexer/runIndexer.ts"
+    "indexer:dev": "tsx watch src/indexer/runIndexer.ts",
+    "start": "tsx src/indexer/runIndexer.ts",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.3.0",
