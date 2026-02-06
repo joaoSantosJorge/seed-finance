@@ -50,7 +50,7 @@ contract LiquidityPoolTest is Test {
         assertEq(pool.symbol(), "SEED");
         assertEq(pool.asset(), address(usdc));
         assertEq(pool.totalAssets(), 0);
-        assertEq(pool.liquidityBuffer(), 100_000e6);
+        assertEq(pool.liquidityBuffer(), 0);
         assertEq(pool.maxTreasuryAllocation(), 8000);
     }
 
@@ -368,7 +368,9 @@ contract LiquidityPoolTest is Test {
         treasuryManager = new TreasuryManager(address(usdc), address(pool));
         pool.setTreasuryManager(address(treasuryManager));
 
-        // Deposit less than buffer (100k)
+        // Set a buffer, then deposit less than buffer
+        pool.setLiquidityBuffer(100_000e6);
+
         vm.prank(lp1);
         pool.deposit(50_000e6, lp1);
 

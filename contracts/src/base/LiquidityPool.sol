@@ -102,8 +102,8 @@ contract LiquidityPool is ERC4626, AccessControl, ReentrancyGuard, Pausable {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(PAUSER_ROLE, msg.sender);
 
-        // Default: keep 100k USDC buffer, max 80% to treasury
-        liquidityBuffer = 100_000 * 1e6; // 100k USDC (6 decimals)
+        // Default: no buffer — set via setLiquidityBuffer() if needed
+        liquidityBuffer = 0;
         maxTreasuryAllocation = 8000; // 80%
     }
 
