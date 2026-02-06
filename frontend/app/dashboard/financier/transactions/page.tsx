@@ -44,7 +44,7 @@ export default function TransactionsPage() {
   // Fetch real transaction data from contract events
   const { transactions, isLoading, error, refetch, summary } = useUserTransactions();
   const { formattedPosition } = useUserPosition();
-  const { poolState } = usePoolState();
+  usePoolState();
 
   // Filter transactions
   const filteredTransactions = useMemo(() => {

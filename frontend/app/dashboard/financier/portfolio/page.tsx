@@ -13,7 +13,7 @@ import { useSharePriceHistory } from '@/hooks/usePoolHistory';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@/components/wallet';
 import { USDC_DECIMALS } from '@/lib/contracts';
-import { formatCurrency, formatPercent, formatBps } from '@/lib/formatters';
+import { formatCurrency } from '@/lib/formatters';
 import { AlertTriangle, TrendingUp, Activity, Wallet, PieChart as PieChartIcon } from 'lucide-react';
 
 export default function PortfolioPage() {

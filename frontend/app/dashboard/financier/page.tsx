@@ -8,7 +8,6 @@ import { PoolMetrics, UtilizationBar } from '@/components/pool';
 import { AreaChart } from '@/components/charts';
 import { usePoolState } from '@/hooks';
 import { useSharePriceHistory, useUserTransactionHistory } from '@/hooks/usePoolHistory';
-import { formatCurrency } from '@/lib/formatters';
 
 export default function FinancierDashboard() {
   const { isLoading: poolLoading } = usePoolState();

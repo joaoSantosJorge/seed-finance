@@ -10,9 +10,8 @@ import { usePoolState } from '@/hooks';
 import { usePoolStateHistory } from '@/hooks/usePoolHistory';
 import { useExecutionPoolStats } from '@/hooks/operator/useExecutionPool';
 import { useAllInvoices, useOverdueInvoices } from '@/hooks/operator/useAllInvoices';
-import { useInvoiceStats } from '@/hooks/invoice/useInvoice';
 import { USDC_DECIMALS } from '@/lib/contracts';
-import { formatCurrency, formatPercent, formatBps } from '@/lib/formatters';
+import { formatCurrency, formatBps } from '@/lib/formatters';
 import type { TimePeriod } from '@/types';
 import { InvoiceStatus } from '@/hooks/invoice/useInvoice';
 import { TrendingUp, AlertTriangle, Clock, DollarSign, Activity, PieChart as PieChartIcon } from 'lucide-react';
@@ -120,7 +119,7 @@ export default function AnalyticsPage() {
     }
 
     // invoiceStats: [totalPending, totalApproved, totalFunded, nextId]
-    const [totalPending, totalApproved, totalFunded, nextId] = invoiceStats as [bigint, bigint, bigint, bigint];
+    const [, , , nextId] = invoiceStats as [bigint, bigint, bigint, bigint];
 
     // Count by status from allInvoices
     const statusCounts = allInvoices.reduce((acc, inv) => {

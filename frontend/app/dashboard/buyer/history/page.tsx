@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { PageHeader } from '@/components/layout';
-import { Card, CardHeader, CardTitle, Button, Skeleton } from '@/components/ui';
+import { Card, Button, Skeleton } from '@/components/ui';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@/components/wallet';
 import { Download, FileCheck, Clock, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
