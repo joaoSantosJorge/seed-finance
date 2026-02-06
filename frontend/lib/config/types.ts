@@ -6,7 +6,6 @@ export interface ContractAddresses {
   usdc: Address;
   liquidityPool: Address;
   treasuryManager: Address;
-  lifiReceiver: Address;
   invoiceDiamond: Address;
   executionPool: Address;
 }

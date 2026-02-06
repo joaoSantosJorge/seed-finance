@@ -3,10 +3,8 @@
 import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
 import { DepositForm } from './DepositForm';
-import { LiFiDepositWidget, MockLiFiWidget } from '@/components/lifi';
 import { CCTPDepositFlow } from '@/components/cctp';
-import { useLiFiConfig } from '@/hooks/lifi';
-import { Wallet, Globe, Building2, ArrowRightLeft } from 'lucide-react';
+import { Wallet, Building2, ArrowRightLeft } from 'lucide-react';
 import { Hex, Address } from 'viem';
 
 interface UnifiedDepositFormProps {
@@ -18,26 +16,15 @@ interface UnifiedDepositFormProps {
  * Unified Deposit Form
  *
  * Provides a tabbed interface for multiple deposit methods:
- * 1. Direct USDC deposits (for users with USDC on Base) - Fastest
+ * 1. Direct USDC deposits (for users with USDC on Arc) - Fastest
  * 2. Cross-chain USDC via CCTP (Circle native, ~15 min)
- * 3. Cross-chain any token via LI.FI (flexible, variable time)
- * 4. Fiat on-ramp via Circle Gateway (for users without crypto)
+ * 3. Fiat on-ramp via Circle Gateway (for users without crypto)
  *
  * On testnet, some features show mock widgets for development.
  * On mainnet, they use the real integrations.
  */
 export function UnifiedDepositForm({ onSuccess, cctpReceiverAddress }: UnifiedDepositFormProps) {
-  const { isBridgingAvailable } = useLiFiConfig();
   const [activeTab, setActiveTab] = useState('usdc');
-
-  const handleLiFiSuccess = (hash: string) => {
-    console.log('LI.FI deposit successful:', hash);
-    onSuccess?.();
-  };
-
-  const handleLiFiError = (error: Error) => {
-    console.error('LI.FI deposit failed:', error);
-  };
 
   const handleCCTPSuccess = (txHash: Hex, shares: bigint) => {
     console.log('CCTP deposit successful:', txHash, shares);
@@ -52,7 +39,7 @@ export function UnifiedDepositForm({ onSuccess, cctpReceiverAddress }: UnifiedDe
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         {/* Tab List */}
-        <TabsList className="w-full grid grid-cols-4 mb-6 rounded-lg overflow-hidden">
+        <TabsList className="w-full grid grid-cols-3 mb-6 rounded-lg overflow-hidden">
           <TabsTrigger value="usdc" className="flex flex-col items-center justify-center gap-1 py-3">
             <Wallet className="w-4 h-4" />
             <span className="text-xs">Direct</span>
@@ -60,10 +47,6 @@ export function UnifiedDepositForm({ onSuccess, cctpReceiverAddress }: UnifiedDe
           <TabsTrigger value="cctp" className="flex flex-col items-center justify-center gap-1 py-3">
             <ArrowRightLeft className="w-4 h-4" />
             <span className="text-xs">CCTP</span>
-          </TabsTrigger>
-          <TabsTrigger value="lifi" className="flex flex-col items-center justify-center gap-1 py-3">
-            <Globe className="w-4 h-4" />
-            <span className="text-xs">Any Token</span>
           </TabsTrigger>
           <TabsTrigger value="fiat" className="flex flex-col items-center justify-center gap-1 py-3">
             <Building2 className="w-4 h-4" />
@@ -76,7 +59,7 @@ export function UnifiedDepositForm({ onSuccess, cctpReceiverAddress }: UnifiedDe
           <div className="space-y-4">
             <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
               <p className="text-sm text-green-700 dark:text-green-300">
-                <strong>Fastest option</strong> - Deposit USDC directly from your wallet on Base.
+                <strong>Fastest option</strong> - Deposit USDC directly from your wallet on Arc.
               </p>
             </div>
             <DepositForm onSuccess={onSuccess} />
@@ -96,28 +79,6 @@ export function UnifiedDepositForm({ onSuccess, cctpReceiverAddress }: UnifiedDe
               onError={handleCCTPError}
               cctpReceiverAddress={cctpReceiverAddress}
             />
-          </div>
-        </TabsContent>
-
-        {/* LI.FI Cross-Chain Any Token */}
-        <TabsContent value="lifi">
-          <div className="space-y-4">
-            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <p className="text-sm text-purple-700 dark:text-purple-300">
-                <strong>Any token, any chain</strong> - Bridge and swap any token to USDC on Base. Time varies by route.
-              </p>
-            </div>
-            {isBridgingAvailable ? (
-              <LiFiDepositWidget
-                onSuccess={handleLiFiSuccess}
-                onError={handleLiFiError}
-              />
-            ) : (
-              <MockLiFiWidget
-                onSuccess={handleLiFiSuccess}
-                onError={handleLiFiError}
-              />
-            )}
           </div>
         </TabsContent>
 
@@ -226,8 +187,8 @@ function DepositMethodComparison({ activeMethod }: { activeMethod: string }) {
       name: 'Direct',
       speed: '~30 sec',
       fees: 'Gas only',
-      requirements: 'USDC on Base',
-      best: 'Already have USDC on Base',
+      requirements: 'USDC on Arc',
+      best: 'Already have USDC on Arc',
     },
     {
       id: 'cctp',
@@ -236,14 +197,6 @@ function DepositMethodComparison({ activeMethod }: { activeMethod: string }) {
       fees: 'Gas + attestation',
       requirements: 'USDC on supported chain',
       best: 'USDC on Ethereum/Arbitrum/etc',
-    },
-    {
-      id: 'lifi',
-      name: 'LI.FI',
-      speed: '5-30 min',
-      fees: 'Gas + bridge + swap',
-      requirements: 'Any token on supported chain',
-      best: 'Non-USDC tokens',
     },
     {
       id: 'fiat',

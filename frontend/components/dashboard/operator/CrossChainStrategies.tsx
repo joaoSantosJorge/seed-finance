@@ -149,8 +149,7 @@ export function CrossChainStrategies() {
         <div className="text-center py-8 text-gray-500">
           <p>No cross-chain strategies configured.</p>
           <p className="text-sm mt-2">
-            Set NEXT_PUBLIC_LIFI_VAULT_STRATEGY_ADDRESS or NEXT_PUBLIC_ARC_USYC_STRATEGY_ADDRESS
-            environment variables.
+            Set NEXT_PUBLIC_ARC_USYC_STRATEGY_ADDRESS environment variable.
           </p>
         </div>
       </div>

@@ -157,7 +157,7 @@ export interface CCTPTransfer {
 
 // ============ Deposit Routing Types ============
 
-export type DepositRouteType = 'DIRECT' | 'CCTP' | 'LIFI' | 'GATEWAY';
+export type DepositRouteType = 'DIRECT' | 'CCTP' | 'GATEWAY';
 
 export interface DepositRoute {
   type: DepositRouteType;
@@ -170,7 +170,7 @@ export interface DepositRoute {
 }
 
 export interface RouteStep {
-  type: 'APPROVE' | 'BURN' | 'WAIT_ATTESTATION' | 'RECEIVE' | 'SWAP' | 'BRIDGE' | 'DEPOSIT';
+  type: 'APPROVE' | 'BURN' | 'WAIT_ATTESTATION' | 'RECEIVE' | 'BRIDGE' | 'DEPOSIT';
   description: string;
   estimatedTime?: string;
   contractAddress?: string;
@@ -229,7 +229,6 @@ export interface ContractAddresses {
   usdc: string;
   liquidityPool: string;
   cctpReceiver: string;
-  lifiReceiver: string;
   smartRouter: string;
   invoiceDiamond?: string;
   executionPool?: string;

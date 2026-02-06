@@ -206,13 +206,13 @@ export function PendingTransfers() {
                   <div>
                     <span className="text-gray-500">Bridge:</span>
                     <span className="ml-2 font-medium text-gray-900">
-                      {transfer.destinationChain === 'Arc' ? 'CCTP' : 'LI.FI'}
+                      CCTP
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-500">Est. Time:</span>
                     <span className="ml-2 font-medium text-gray-900">
-                      {transfer.destinationChain === 'Arc' ? '15-20 min' : '5-15 min'}
+                      15-20 min
                     </span>
                   </div>
                 </div>

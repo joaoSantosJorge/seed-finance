@@ -75,7 +75,7 @@
 | **EVM version** | Cancun | Prague |
 | **Builder** | Coinbase/Optimism | Circle |
 | **CCTP** | V1 | V2 |
-| **LI.FI support** | Yes | Not yet |
+| **Bridge** | CCTP V1 | CCTP V2 |
 
 ---
 

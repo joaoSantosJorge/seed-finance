@@ -1,11 +1,10 @@
-# 09 - Circle Wallets + Gateway + CCTP/LI.FI Smart Routing Integration
+# 09 - Circle Wallets + Gateway + CCTP Smart Routing Integration
 
 ## Overview
 
 This document describes the integration of Circle's infrastructure with smart cross-chain routing for Seed Finance:
 
 - **USDC transfers** - Use CCTP (Circle Cross-Chain Transfer Protocol)
-- **Non-USDC tokens** - Use LI.FI (already integrated)
 - **Circle Wallets** - For ALL users (LPs, Buyers, Suppliers)
 - **Circle Gateway** - Both fiat on-ramp and off-ramp
 
@@ -20,14 +19,13 @@ This document describes the integration of Circle's infrastructure with smart cr
 │  │                         USER ENTRY POINTS                               │ │
 │  │  • Fiat (Bank) ──► Circle Gateway ──► USDC on Base                    │ │
 │  │  • USDC (any chain) ──► CCTP ──► USDC on Base                         │ │
-│  │  • Other tokens ──► LI.FI ──► USDC on Base                            │ │
 │  └────────────────────────────────────────────────────────────────────────┘ │
 │                                   │                                          │
 │                                   ▼                                          │
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
 │  │                    SMART ROUTER CONTRACT (Base)                         │ │
 │  │  • Detects incoming token type                                         │ │
-│  │  • Routes to appropriate handler (CCTP or LI.FI receiver)             │ │
+│  │  • Routes to appropriate handler (CCTP receiver)                      │ │
 │  │  • Final destination: LiquidityPool for SEED shares                   │ │
 │  └────────────────────────────────────────────────────────────────────────┘ │
 │                                   │                                          │
@@ -78,7 +76,6 @@ Unified entry point for all deposit methods.
 Key features:
 - `depositDirect()` - Direct USDC deposit on Base
 - `handleCCTPDeposit()` - Called by CCTPReceiver after CCTP transfer
-- `handleLiFiDeposit()` - Called by LiFiReceiver after bridge/swap
 - Authorized handler system
 - Deposit statistics by method
 
@@ -116,10 +113,9 @@ Key features:
 Smart routing to determine optimal deposit path.
 
 Routes:
-1. **DIRECT** - USDC on Base (fastest)
+1. **DIRECT** - USDC on Arc (fastest)
 2. **CCTP** - USDC on other chains (~15 min)
-3. **LIFI** - Non-USDC tokens (variable)
-4. **GATEWAY** - Fiat (1-3 days)
+3. **GATEWAY** - Fiat (1-3 days)
 
 ### Frontend Components
 
@@ -153,10 +149,9 @@ React hook for attestation polling:
 #### 4. UnifiedDepositForm.tsx (Updated)
 **Location:** `frontend/components/forms/UnifiedDepositForm.tsx`
 
-Now includes 4 tabs:
-- Direct (USDC on Base)
+Now includes 3 tabs:
+- Direct (USDC on Arc)
 - CCTP (Cross-chain USDC)
-- LI.FI (Any token)
 - Fiat (Circle Gateway)
 
 ### Webhook Handler
@@ -258,7 +253,7 @@ cd contracts && forge test --match-contract CCTPReceiver -vvv
 | Frontend | `CCTPDepositFlow.tsx` | CCTP UI component |
 | Frontend | `useCCTPDeposit.ts` | CCTP deposit hook |
 | Frontend | `useCCTPAttestation.ts` | Attestation polling |
-| Frontend | `UnifiedDepositForm.tsx` | Updated 4-tab form |
+| Frontend | `UnifiedDepositForm.tsx` | Updated 3-tab form |
 
 ## Status
 

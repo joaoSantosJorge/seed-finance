@@ -144,7 +144,6 @@ seed-finance/
 │   │   │
 │   │   ├── integrations/
 │   │   │   ├── CCTPReceiver.sol            # Cross-chain USDC (future)
-│   │   │   ├── LiFiReceiver.sol            # Cross-chain routing
 │   │   │   └── SmartRouter.sol             # Route optimization
 │   │   │
 │   │   └── strategies/

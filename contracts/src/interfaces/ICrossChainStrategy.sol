@@ -12,7 +12,6 @@ import "./ITreasuryStrategy.sol";
  *      - No instant withdrawals supported
  *
  * Example implementations:
- * - LiFiVaultStrategy: Bridge to Arbitrum via LI.FI → Aave V3
  * - ArcUSYCStrategy: Bridge to Arc via CCTP → USYC T-bills
  */
 interface ICrossChainStrategy is ITreasuryStrategy {

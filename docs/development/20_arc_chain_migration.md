@@ -14,7 +14,7 @@ Migrated all chain configuration from Base L2 (Sepolia/Mainnet) to Arc chain (Ci
 | `contracts/src/base/LiquidityPool.sol` | Added Arc USDC decimal safety comment (18 native vs 6 ERC-20) |
 | `contracts/src/invoice/ExecutionPool.sol` | Added Arc USDC decimal safety comment |
 | `contracts/src/strategies/USYCStrategy.sol` | Updated USYC address comment to Arc (`0xe9185...`), added USDC decimal note |
-| `contracts/script/DeployLiFiReceiver.s.sol` | Replaced Base USDC addresses with Arc system contract, updated chain ID checks (5042002/1243) |
+| `contracts/script/DeployLocal.s.sol` | Updated chain ID checks (5042002/1243) |
 
 ### Frontend
 
@@ -24,7 +24,6 @@ Migrated all chain configuration from Base L2 (Sepolia/Mainnet) to Arc chain (Ci
 | `frontend/lib/config/contracts.ts` | Updated testnet/production USDC to `0x3600...000` |
 | `frontend/lib/config/env.ts` | Updated imports, display names, RPCs, and explorers for Arc |
 | `frontend/lib/wagmi.ts` | Updated imports to use Arc chains |
-| `frontend/lib/lifi/config.ts` | Updated chain IDs, USDC addresses; `isLiFiBridgingAvailable()` returns false (LiFi doesn't support Arc yet) |
 | `frontend/.env.example` | Updated comments to reference Arc |
 | `frontend/.env.local.example` | Updated header comment |
 
@@ -53,8 +52,7 @@ Migrated all chain configuration from Base L2 (Sepolia/Mainnet) to Arc chain (Ci
 1. **Gas token**: Arc uses USDC natively (18 decimals at protocol level). Our contracts use the ERC-20 interface (6 decimals) so no code changes needed beyond comments.
 2. **EVM version**: Prague vs Cancun — `foundry.toml` updated accordingly.
 3. **Finality**: Sub-second deterministic on Arc vs ~2s on Base.
-4. **LI.FI**: Not yet supported on Arc — `isLiFiBridgingAvailable()` returns false.
-5. **CCTP**: V2 deployed on Arc with different contract addresses.
+4. **CCTP**: V2 deployed on Arc with different contract addresses.
 
 ### What Didn't Change
 

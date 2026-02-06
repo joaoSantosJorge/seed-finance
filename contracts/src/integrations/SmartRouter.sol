@@ -11,26 +11,25 @@ import "@openzeppelin/contracts/interfaces/IERC4626.sol";
  * @title SmartRouter
  * @notice Unified entry point for all deposit methods into Seed Finance LiquidityPool
  * @dev Routes deposits based on source:
- *      - Direct: User has USDC on Base → depositDirect()
+ *      - Direct: User has USDC on Arc → depositDirect()
  *      - CCTP: USDC from other chains via CCTP → handleCCTPDeposit()
- *      - LI.FI: Non-USDC tokens or unsupported chains → handleLiFiDeposit()
  *
  * This contract provides a single interface for the frontend while
- * coordinating with specialized receivers (CCTPReceiver, LiFiReceiver)
+ * coordinating with specialized receivers (CCTPReceiver)
  * for cross-chain operations.
  *
  * Architecture:
  * ┌──────────────────────────────────────────────────────────────────┐
  * │                        SmartRouter                                │
- * │  ┌───────────────┬───────────────┬──────────────────────────┐   │
- * │  │ depositDirect │ handleCCTP    │ handleLiFi               │   │
- * │  │ (Base USDC)   │ (CCTP USDC)   │ (LI.FI any token)       │   │
- * │  └───────┬───────┴───────┬───────┴─────────┬────────────────┘   │
- * │          │               │                 │                     │
- * │          └───────────────┼─────────────────┘                     │
- * │                          ▼                                       │
- * │                   LiquidityPool                                  │
- * │                   (ERC-4626 vault)                               │
+ * │  ┌───────────────┬───────────────┐                               │
+ * │  │ depositDirect │ handleCCTP    │                               │
+ * │  │ (Arc USDC)    │ (CCTP USDC)   │                               │
+ * │  └───────┬───────┴───────┬───────┘                               │
+ * │          │               │                                       │
+ * │          └───────────────┘                                       │
+ * │                  ▼                                               │
+ * │           LiquidityPool                                          │
+ * │           (ERC-4626 vault)                                       │
  * └──────────────────────────────────────────────────────────────────┘
  */
 contract SmartRouter is Ownable, ReentrancyGuard {
@@ -38,7 +37,7 @@ contract SmartRouter is Ownable, ReentrancyGuard {
 
     // ============ State Variables ============
 
-    /// @notice USDC token address on Base
+    /// @notice USDC token address
     IERC20 public immutable usdc;
 
     /// @notice LiquidityPool (ERC-4626 vault) address
@@ -47,13 +46,10 @@ contract SmartRouter is Ownable, ReentrancyGuard {
     /// @notice CCTPReceiver contract address
     address public cctpReceiver;
 
-    /// @notice LiFiReceiver contract address
-    address public lifiReceiver;
-
     /// @notice Minimum deposit amount (prevents dust attacks)
     uint256 public minDepositAmount;
 
-    /// @notice Mapping of authorized handlers (CCTP/LI.FI receivers)
+    /// @notice Mapping of authorized handlers (CCTP receivers)
     mapping(address => bool) public authorizedHandlers;
 
     /// @notice Total deposits routed through this contract
@@ -65,9 +61,8 @@ contract SmartRouter is Ownable, ReentrancyGuard {
     // ============ Enums ============
 
     enum DepositMethod {
-        Direct,  // USDC on Base
-        CCTP,    // USDC from other chains via CCTP
-        LiFi     // Any token via LI.FI bridge
+        Direct,  // USDC on Arc
+        CCTP     // USDC from other chains via CCTP
     }
 
     // ============ Events ============
@@ -85,16 +80,8 @@ contract SmartRouter is Ownable, ReentrancyGuard {
         uint32 sourceDomain
     );
 
-    event LiFiDepositHandled(
-        address indexed beneficiary,
-        uint256 amount,
-        uint256 sharesReceived,
-        bytes32 transferId
-    );
-
     event HandlerUpdated(address indexed handler, bool authorized);
     event CCTPReceiverUpdated(address indexed oldReceiver, address indexed newReceiver);
-    event LiFiReceiverUpdated(address indexed oldReceiver, address indexed newReceiver);
     event MinDepositUpdated(uint256 oldAmount, uint256 newAmount);
     event EmergencyWithdraw(address indexed token, uint256 amount, address indexed to);
 
@@ -112,7 +99,7 @@ contract SmartRouter is Ownable, ReentrancyGuard {
 
     /**
      * @notice Initialize the SmartRouter
-     * @param _usdc USDC token address on Base
+     * @param _usdc USDC token address
      * @param _liquidityPool LiquidityPool (ERC-4626 vault) address
      * @param _minDepositAmount Minimum deposit amount in USDC
      */
@@ -132,10 +119,10 @@ contract SmartRouter is Ownable, ReentrancyGuard {
         usdc.approve(_liquidityPool, type(uint256).max);
     }
 
-    // ============ Direct Deposit (Base USDC) ============
+    // ============ Direct Deposit (Arc USDC) ============
 
     /**
-     * @notice Direct deposit for users who have USDC on Base
+     * @notice Direct deposit for users who have USDC on Arc
      * @param amount USDC amount to deposit
      * @return shares Amount of SEED shares received
      * @dev User must approve this contract to spend their USDC first
@@ -224,44 +211,6 @@ contract SmartRouter is Ownable, ReentrancyGuard {
         emit CCTPDepositHandled(beneficiary, amount, shares, sourceDomain);
     }
 
-    // ============ LI.FI Handler ============
-
-    /**
-     * @notice Handle USDC deposit from LI.FI bridge
-     * @param beneficiary Address that will receive SEED shares
-     * @param amount USDC amount received from LI.FI
-     * @param transferId LI.FI transfer tracking ID
-     * @return shares Amount of SEED shares received
-     * @dev Called by LiFiReceiver after bridging/swapping to USDC
-     *      USDC should already be in this contract
-     */
-    function handleLiFiDeposit(
-        address beneficiary,
-        uint256 amount,
-        bytes32 transferId
-    ) external nonReentrant returns (uint256 shares) {
-        // Only authorized handlers (LiFiReceiver)
-        if (!authorizedHandlers[msg.sender]) {
-            revert UnauthorizedHandler(msg.sender);
-        }
-        if (amount == 0) revert ZeroAmount();
-        if (beneficiary == address(0)) revert ZeroAddress();
-
-        // Verify we have the USDC
-        uint256 balance = usdc.balanceOf(address(this));
-        if (balance < amount) revert InsufficientBalance();
-
-        // Deposit to pool
-        shares = liquidityPool.deposit(amount, beneficiary);
-        if (shares == 0) revert DepositFailed();
-
-        // Update stats
-        totalRouted += amount;
-        depositsByMethod[DepositMethod.LiFi]++;
-
-        emit LiFiDepositHandled(beneficiary, amount, shares, transferId);
-    }
-
     // ============ Admin Functions ============
 
     /**
@@ -282,26 +231,6 @@ contract SmartRouter is Ownable, ReentrancyGuard {
 
         emit CCTPReceiverUpdated(oldReceiver, _cctpReceiver);
         emit HandlerUpdated(_cctpReceiver, true);
-    }
-
-    /**
-     * @notice Set LiFiReceiver contract address
-     * @param _lifiReceiver New LiFiReceiver address
-     */
-    function setLiFiReceiver(address _lifiReceiver) external onlyOwner {
-        if (_lifiReceiver == address(0)) revert ZeroAddress();
-
-        // Remove old receiver from authorized handlers
-        if (lifiReceiver != address(0)) {
-            authorizedHandlers[lifiReceiver] = false;
-        }
-
-        address oldReceiver = lifiReceiver;
-        lifiReceiver = _lifiReceiver;
-        authorizedHandlers[_lifiReceiver] = true;
-
-        emit LiFiReceiverUpdated(oldReceiver, _lifiReceiver);
-        emit HandlerUpdated(_lifiReceiver, true);
     }
 
     /**
@@ -364,21 +293,18 @@ contract SmartRouter is Ownable, ReentrancyGuard {
      * @return _totalRouted Total USDC routed through this contract
      * @return _directCount Number of direct deposits
      * @return _cctpCount Number of CCTP deposits
-     * @return _lifiCount Number of LI.FI deposits
      * @return _currentBalance Current USDC balance
      */
     function getStats() external view returns (
         uint256 _totalRouted,
         uint256 _directCount,
         uint256 _cctpCount,
-        uint256 _lifiCount,
         uint256 _currentBalance
     ) {
         return (
             totalRouted,
             depositsByMethod[DepositMethod.Direct],
             depositsByMethod[DepositMethod.CCTP],
-            depositsByMethod[DepositMethod.LiFi],
             usdc.balanceOf(address(this))
         );
     }
