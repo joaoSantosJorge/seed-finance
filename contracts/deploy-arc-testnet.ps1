@@ -11,18 +11,38 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# ===== Load .env file if it exists =====
+$envFile = Join-Path $PSScriptRoot ".env"
+if (Test-Path $envFile) {
+    Write-Host "Loading .env file..." -ForegroundColor Gray
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+            $key = $matches[1].Trim()
+            $val = $matches[2].Trim()
+            if ($val -and -not [System.Environment]::GetEnvironmentVariable($key)) {
+                [System.Environment]::SetEnvironmentVariable($key, $val)
+                Set-Item "env:$key" $val
+            }
+        }
+    }
+}
+
 # ===== Check required environment variables =====
-if (-not $env:ARC_TESTNET_PRIVATE_KEY) {
+$Account = if ($env:ARC_TESTNET_ACCOUNT) { $env:ARC_TESTNET_ACCOUNT } else { "arc-deployer" }
+$RpcUrl = if ($env:ARC_TESTNET_RPC_URL) { $env:ARC_TESTNET_RPC_URL } else { "https://rpc.testnet.arc.network" }
+
+# Verify the keystore account exists
+$keystoreCheck = cast wallet list 2>&1
+if ($keystoreCheck -notmatch $Account) {
     Write-Error @"
-ARC_TESTNET_PRIVATE_KEY not set. Run:
-  `$env:ARC_TESTNET_PRIVATE_KEY = "0x..."
+Keystore account '$Account' not found. Import your private key first:
+  cast wallet import $Account --interactive
 "@
     exit 1
 }
 
-$RpcUrl = if ($env:ARC_TESTNET_RPC_URL) { $env:ARC_TESTNET_RPC_URL } else { "https://rpc.testnet.arc.network" }
-
 Write-Host "=== Seed Finance - Arc Testnet Deployment ===" -ForegroundColor Cyan
+Write-Host "Account: $Account (encrypted keystore)" -ForegroundColor Green
 Write-Host "RPC URL: $RpcUrl"
 Write-Host ""
 
@@ -43,7 +63,7 @@ $forgeArgs = @(
     "script",
     "script/DeployArcTestnet.s.sol:DeployArcTestnet",
     "--rpc-url", $RpcUrl,
-    "--private-key", $env:ARC_TESTNET_PRIVATE_KEY
+    "--account", $Account
 )
 
 if (-not $DryRun) {

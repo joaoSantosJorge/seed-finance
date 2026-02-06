@@ -16,6 +16,30 @@ import "src/invoice/facets/RepaymentFacet.sol";
 import "src/invoice/facets/ViewFacet.sol";
 import "src/invoice/facets/AdminFacet.sol";
 
+// Storage library (for DiamondInit)
+import "src/invoice/libraries/LibInvoiceStorage.sol";
+
+/**
+ * @title DiamondInit
+ * @notice Initialization contract for the InvoiceDiamond
+ * @dev Uses msg.sender from the delegatecall context (the actual deployer EOA)
+ *      instead of a parameter, avoiding Foundry's msg.sender mismatch between
+ *      script-level code and EVM-level execution.
+ */
+contract DiamondInit {
+    function init(address _usdc) external {
+        LibInvoiceStorage.Storage storage s = LibInvoiceStorage.getStorage();
+
+        require(s.owner == address(0), "Already initialized");
+        require(_usdc != address(0), "Invalid USDC");
+
+        // msg.sender here is the actual deployer (from delegatecall in constructor)
+        s.owner = msg.sender;
+        s.usdc = _usdc;
+        s.nextInvoiceId = 1;
+    }
+}
+
 /**
  * @title DeployArcTestnet
  * @notice Deployment script for Arc Testnet (chain ID 5042002)
@@ -30,18 +54,18 @@ import "src/invoice/facets/AdminFacet.sol";
  * - Uses Arc system USDC at 0x3600000000000000000000000000000000000000
  * - No mock minting (use Circle faucet: https://faucet.circle.com)
  * - Liquidity buffer set to 0 for small-amount testing
- * - Deployer is msg.sender (no hardcoded test accounts)
+ * - Uses DiamondInit helper to correctly set owner from EVM context
  *
  * Usage:
  *   # Dry run (simulation):
  *   forge script script/DeployArcTestnet.s.sol:DeployArcTestnet \
  *     --rpc-url https://rpc.testnet.arc.network \
- *     --private-key $ARC_TESTNET_PRIVATE_KEY
+ *     --account arc-deployer
  *
  *   # Live deployment:
  *   forge script script/DeployArcTestnet.s.sol:DeployArcTestnet \
  *     --rpc-url https://rpc.testnet.arc.network \
- *     --private-key $ARC_TESTNET_PRIVATE_KEY \
+ *     --account arc-deployer \
  *     --broadcast \
  *     --verify --etherscan-api-key $ARCSCAN_API_KEY
  */
@@ -74,7 +98,6 @@ contract DeployArcTestnet is Script {
         vm.startBroadcast();
 
         console.log("=== Seed Finance Arc Testnet Deployment ===");
-        console.log("Deployer:", msg.sender);
         console.log("Chain ID:", block.chainid);
         console.log("USDC:", ARC_USDC);
         console.log("");
@@ -87,8 +110,6 @@ contract DeployArcTestnet is Script {
             "SEED"
         );
         console.log("  LiquidityPool deployed at:", address(liquidityPool));
-
-        // Buffer defaults to 0 in constructor — no change needed
         console.log("  LiquidityPool buffer: 0 (testnet mode)");
 
         // ===== Step 2: Deploy Facets =====
@@ -190,13 +211,21 @@ contract DeployArcTestnet is Script {
             functionSelectors: adminSelectors
         });
 
-        // Deploy diamond with facets
-        invoiceDiamond = new InvoiceDiamond(cuts, address(0), "");
+        // Deploy DiamondInit helper — uses msg.sender from EVM delegatecall context
+        // (the real EOA), not Foundry's script-level msg.sender (DefaultSender)
+        DiamondInit diamondInit = new DiamondInit();
+
+        // Deploy diamond with facets + atomic initialization
+        invoiceDiamond = new InvoiceDiamond(
+            cuts,
+            address(diamondInit),
+            abi.encodeWithSelector(DiamondInit.init.selector, ARC_USDC)
+        );
         console.log("  InvoiceDiamond deployed at:", address(invoiceDiamond));
 
-        // Initialize the diamond
-        AdminFacet(address(invoiceDiamond)).initialize(msg.sender, ARC_USDC);
-        console.log("  InvoiceDiamond initialized with owner:", msg.sender);
+        // Log the actual owner set by DiamondInit (the real EOA)
+        address diamondOwner = ViewFacet(address(invoiceDiamond)).owner();
+        console.log("  InvoiceDiamond owner:", diamondOwner);
 
         // ===== Step 4: Deploy ExecutionPool =====
         console.log("Step 4: Deploying ExecutionPool...");
@@ -221,7 +250,7 @@ contract DeployArcTestnet is Script {
         console.log("  InvoiceDiamond linked to ExecutionPool and LiquidityPool");
 
         // Set deployer as operator in InvoiceDiamond
-        AdminFacet(address(invoiceDiamond)).setOperator(msg.sender, true);
+        AdminFacet(address(invoiceDiamond)).setOperator(diamondOwner, true);
         console.log("  Deployer set as operator in InvoiceDiamond");
 
         vm.stopBroadcast();

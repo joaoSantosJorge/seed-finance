@@ -41,7 +41,7 @@ Post-deployment configuration:
 
 ### Prerequisites
 
-1. Install Foundry: `curl -L https://foundry.paradigm.xyz | bash && foundryup`
+1. Install Foundry: `foundryup` (or see https://book.getfoundry.sh/getting-started/installation)
 2. Get testnet USDC from [Circle Faucet](https://faucet.circle.com)
 3. Set environment variables:
 

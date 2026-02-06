@@ -13,10 +13,10 @@ const defaults: Record<Environment, ContractAddresses> = {
   },
   testnet: {
     usdc: '0x3600000000000000000000000000000000000000' as Address,
-    liquidityPool: ZERO, // Set via env var after deploy
+    liquidityPool: '0xb67db96eebf1d30d95a382535afbb2375ecf0219' as Address,
     treasuryManager: ZERO,
-    invoiceDiamond: ZERO, // Set via env var after deploy
-    executionPool: ZERO, // Set via env var after deploy
+    invoiceDiamond: '0xe73911fbe91a0f76b20b53a8bd7d4c84c5532da6' as Address,
+    executionPool: '0xf1389407cb618990b838d549c226de9ec2d447f0' as Address,
   },
   production: {
     usdc: '0x3600000000000000000000000000000000000000' as Address,
