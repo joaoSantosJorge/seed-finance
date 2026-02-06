@@ -5,17 +5,20 @@ import { isProduction, isTestnet } from '@/lib/config';
  * LI.FI Configuration
  *
  * Configures the LI.FI widget for cross-chain deposits into Seed Finance.
- * Users can swap/bridge any token from any chain to USDC on Base,
+ * Users can swap/bridge any token from any chain to USDC on Arc,
  * which is then auto-deposited into the LiquidityPool.
+ *
+ * Note: LI.FI does not yet support Arc chain. This config is a placeholder
+ * for when support is added. isLiFiBridgingAvailable() returns false for Arc.
  */
 
-// Base chain IDs
-export const BASE_MAINNET_CHAIN_ID = 8453 as ChainId;
-export const BASE_SEPOLIA_CHAIN_ID = 84532 as ChainId;
+// Arc chain IDs
+export const ARC_MAINNET_CHAIN_ID = 1243 as ChainId;
+export const ARC_TESTNET_CHAIN_ID = 5042002 as ChainId;
 
-// USDC addresses
-export const USDC_ADDRESS_MAINNET = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
-export const USDC_ADDRESS_SEPOLIA = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+// USDC addresses (Arc system contract)
+export const USDC_ADDRESS_MAINNET = '0x3600000000000000000000000000000000000000';
+export const USDC_ADDRESS_TESTNET = '0x3600000000000000000000000000000000000000';
 
 // LiFiReceiver contract addresses (set after deployment)
 // These are read from environment variables
@@ -30,14 +33,14 @@ export const LIFI_RECEIVER_ADDRESS_SEPOLIA =
 export function getCurrentChainConfig() {
   if (isProduction) {
     return {
-      chainId: BASE_MAINNET_CHAIN_ID,
+      chainId: ARC_MAINNET_CHAIN_ID,
       usdcAddress: USDC_ADDRESS_MAINNET,
       receiverAddress: LIFI_RECEIVER_ADDRESS_MAINNET,
     };
   }
   return {
-    chainId: BASE_SEPOLIA_CHAIN_ID,
-    usdcAddress: USDC_ADDRESS_SEPOLIA,
+    chainId: ARC_TESTNET_CHAIN_ID,
+    usdcAddress: USDC_ADDRESS_TESTNET,
     receiverAddress: LIFI_RECEIVER_ADDRESS_SEPOLIA,
   };
 }
@@ -55,7 +58,7 @@ export const lifiSdkConfig: SDKConfig = {
  * Create LI.FI Widget configuration
  *
  * The widget is configured to:
- * 1. Lock destination chain to Base
+ * 1. Lock destination chain to Arc
  * 2. Lock destination token to USDC
  * 3. Set receiver to LiFiReceiver contract (for auto-deposit)
  * 4. Allow any source chain/token
@@ -165,10 +168,7 @@ export function isLiFiReceiverConfigured(): boolean {
  * Check if we're in a testnet environment where LI.FI bridges may not work
  */
 export function isLiFiBridgingAvailable(): boolean {
-  // LI.FI has limited testnet support
-  // On testnets, we use mock mode for development
-  if (isTestnet) {
-    return false; // Use mock on testnet
-  }
-  return true;
+  // LI.FI does not yet support Arc chain
+  // Return false until LI.FI adds Arc support
+  return false;
 }

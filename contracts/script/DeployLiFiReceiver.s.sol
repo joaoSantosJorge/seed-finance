@@ -9,26 +9,18 @@ import "src/integrations/LiFiReceiver.sol";
  * @notice Deployment script for LiFiReceiver contract
  *
  * Usage:
- *   # Dry run on Base Sepolia
+ *   # Dry run on Arc Testnet
  *   forge script script/DeployLiFiReceiver.s.sol:DeployLiFiReceiver \
- *     --rpc-url $BASE_SEPOLIA_RPC_URL \
+ *     --rpc-url $ARC_TESTNET_RPC_URL \
  *     --private-key $PRIVATE_KEY
  *
- *   # Deploy and verify on Base Sepolia
+ *   # Deploy and verify on Arc Testnet
  *   forge script script/DeployLiFiReceiver.s.sol:DeployLiFiReceiver \
- *     --rpc-url $BASE_SEPOLIA_RPC_URL \
+ *     --rpc-url $ARC_TESTNET_RPC_URL \
  *     --private-key $PRIVATE_KEY \
  *     --broadcast \
  *     --verify \
- *     --etherscan-api-key $BASESCAN_API_KEY
- *
- *   # Deploy on Base Mainnet
- *   forge script script/DeployLiFiReceiver.s.sol:DeployLiFiReceiver \
- *     --rpc-url $BASE_MAINNET_RPC_URL \
- *     --private-key $PRIVATE_KEY \
- *     --broadcast \
- *     --verify \
- *     --etherscan-api-key $BASESCAN_API_KEY
+ *     --etherscan-api-key $ARCSCAN_API_KEY
  *
  * Environment Variables:
  *   - USDC_ADDRESS: USDC token address
@@ -37,11 +29,11 @@ import "src/integrations/LiFiReceiver.sol";
  *   - LIFI_EXECUTOR: (Optional) LI.FI executor address to authorize
  */
 contract DeployLiFiReceiver is Script {
-    // Base Sepolia USDC
-    address constant BASE_SEPOLIA_USDC = 0x036CbD53842c5426634e7929541eC2318f3dCF7e;
+    // Arc Testnet USDC (system contract)
+    address constant ARC_TESTNET_USDC = 0x3600000000000000000000000000000000000000;
 
-    // Base Mainnet USDC
-    address constant BASE_MAINNET_USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    // Arc Mainnet USDC (same system contract, mainnet TBD)
+    address constant ARC_MAINNET_USDC = 0x3600000000000000000000000000000000000000;
 
     // Default minimum deposit: 10 USDC
     uint256 constant DEFAULT_MIN_DEPOSIT = 10e6;
@@ -102,12 +94,12 @@ contract DeployLiFiReceiver is Script {
 
     function _getDefaultUsdc() internal view returns (address) {
         // Auto-detect network based on chain ID
-        if (block.chainid == 84532) {
-            // Base Sepolia
-            return BASE_SEPOLIA_USDC;
-        } else if (block.chainid == 8453) {
-            // Base Mainnet
-            return BASE_MAINNET_USDC;
+        if (block.chainid == 5042002) {
+            // Arc Testnet
+            return ARC_TESTNET_USDC;
+        } else if (block.chainid == 1243) {
+            // Arc Mainnet (placeholder)
+            return ARC_MAINNET_USDC;
         } else {
             revert("Unknown chain ID - please set USDC_ADDRESS");
         }
@@ -120,7 +112,7 @@ contract DeployLiFiReceiver is Script {
  *
  * Usage:
  *   forge script script/DeployLiFiReceiver.s.sol:DeployLiFiReceiverTestnet \
- *     --rpc-url $BASE_SEPOLIA_RPC_URL \
+ *     --rpc-url $ARC_TESTNET_RPC_URL \
  *     --private-key $PRIVATE_KEY \
  *     --broadcast
  */

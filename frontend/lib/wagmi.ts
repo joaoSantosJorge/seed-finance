@@ -1,11 +1,11 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { appConfig, anvil, baseSepolia, baseMainnet } from './config';
+import { appConfig, anvil, arcTestnet, arcMainnet } from './config';
 
 const chains = appConfig.isLocal
-  ? [anvil, baseSepolia]
+  ? [anvil, arcTestnet]
   : appConfig.isProduction
-    ? [baseMainnet]
-    : [baseSepolia, baseMainnet];
+    ? [arcMainnet]
+    : [arcTestnet, arcMainnet];
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'Seed Finance',

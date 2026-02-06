@@ -4,8 +4,8 @@
  * Service for managing Circle Gateway on-ramp and off-ramp operations.
  * Enables fiat-to-crypto and crypto-to-fiat conversions for Seed Finance users.
  *
- * On-ramp: Bank USD -> USDC on Base (for buyers to fund invoice repayments)
- * Off-ramp: USDC on Base -> Bank USD (for suppliers to receive funding)
+ * On-ramp: Bank USD -> USDC on Arc (for buyers to fund invoice repayments)
+ * Off-ramp: USDC on Arc -> Bank USD (for suppliers to receive funding)
  */
 
 import type {

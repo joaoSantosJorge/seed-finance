@@ -34,8 +34,13 @@ interface IUSYC {
  * - Instant redemption for qualified holders
  * - Compliant with securities regulations
  *
- * On Base:
- * - USYC Address: 0x136471a34f6ef19fE571EFFC1CA711fdb8E49f2b
+ * Arc Chain Note: On Arc, USDC is the native gas token with 18 decimals at the
+ * protocol level, but the ERC-20 interface at 0x3600000000000000000000000000000000000000
+ * uses 6 decimals. This contract interacts via the ERC-20 interface only, so all amounts
+ * remain in 6-decimal precision. Do NOT use msg.value for USDC transfers on Arc.
+ *
+ * On Arc:
+ * - USYC Address: 0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C
  */
 contract USYCStrategy is ITreasuryStrategy, Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;

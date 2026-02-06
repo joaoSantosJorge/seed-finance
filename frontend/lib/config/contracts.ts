@@ -13,7 +13,7 @@ const defaults: Record<Environment, ContractAddresses> = {
     executionPool: ZERO,
   },
   testnet: {
-    usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e' as Address,
+    usdc: '0x3600000000000000000000000000000000000000' as Address,
     liquidityPool: ZERO, // Set via env var after deploy
     treasuryManager: ZERO,
     lifiReceiver: ZERO, // Set via env var after deploy
@@ -21,7 +21,7 @@ const defaults: Record<Environment, ContractAddresses> = {
     executionPool: ZERO, // Set via env var after deploy
   },
   production: {
-    usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as Address,
+    usdc: '0x3600000000000000000000000000000000000000' as Address,
     liquidityPool: ZERO,
     treasuryManager: ZERO,
     lifiReceiver: ZERO,

@@ -16,7 +16,7 @@ optimizer_runs = 200
 via_ir = false
 
 # EVM settings
-evm_version = "cancun"
+evm_version = "prague"
 
 # Testing
 fuzz = { runs = 256 }
@@ -28,9 +28,7 @@ fuzz = { runs = 1000 }
 invariant = { runs = 1000 }
 
 [rpc_endpoints]
-base_sepolia = "${BASE_SEPOLIA_RPC_URL}"
-base_mainnet = "${BASE_MAINNET_RPC_URL}"
+arc_testnet = "${ARC_TESTNET_RPC_URL}"
 
 [etherscan]
-base_sepolia = { key = "${BASESCAN_API_KEY}", url = "https://api-sepolia.basescan.org/api" }
-base_mainnet = { key = "${BASESCAN_API_KEY}", url = "https://api.basescan.org/api" }
+arc_testnet = { key = "${ARCSCAN_API_KEY}", url = "https://testnet.arcscan.app/api" }

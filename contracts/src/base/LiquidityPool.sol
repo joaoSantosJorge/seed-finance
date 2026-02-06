@@ -12,8 +12,14 @@ import "../interfaces/ITreasuryStrategy.sol";
 
 /**
  * @title SeedFinance Liquidity Pool
- * @notice ERC-4626 vault for USDC deposits on Base
+ * @notice ERC-4626 vault for USDC deposits on Arc
  * @dev LPs deposit USDC, receive SEED shares, earn yield from:
+ *
+ * Arc Chain Note: On Arc, USDC is the native gas token with 18 decimals at the
+ * protocol level, but the ERC-20 interface at 0x3600000000000000000000000000000000000000
+ * uses 6 decimals. This contract interacts via the ERC-20 interface only, so all amounts
+ * remain in 6-decimal precision. Do NOT use msg.value for USDC transfers on Arc.
+ *
  *      1. Invoice financing spreads (primary)
  *      2. Treasury strategies on idle capital (secondary)
  *

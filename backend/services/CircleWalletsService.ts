@@ -24,6 +24,7 @@ type CircleWalletsClient = ReturnType<typeof initiateDeveloperControlledWalletsC
  * Supported blockchain networks for Circle Wallets
  */
 const SUPPORTED_BLOCKCHAINS = {
+  ARC_TESTNET: 'ARC-TESTNET',
   BASE_SEPOLIA: 'BASE-SEPOLIA',
   BASE_MAINNET: 'BASE',
   ETHEREUM_SEPOLIA: 'ETH-SEPOLIA',
@@ -32,13 +33,15 @@ const SUPPORTED_BLOCKCHAINS = {
 
 /**
  * Default blockchain for new wallets
+ * Note: Circle may not support ARC-TESTNET yet; update when available
  */
-const DEFAULT_BLOCKCHAIN = SUPPORTED_BLOCKCHAINS.BASE_SEPOLIA;
+const DEFAULT_BLOCKCHAIN = SUPPORTED_BLOCKCHAINS.ARC_TESTNET;
 
 /**
  * USDC contract addresses by blockchain
  */
 const USDC_ADDRESSES: Record<string, string> = {
+  'ARC-TESTNET': '0x3600000000000000000000000000000000000000',
   'BASE-SEPOLIA': '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
   'BASE': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
   'ETH-SEPOLIA': '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',

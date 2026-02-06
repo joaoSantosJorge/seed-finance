@@ -10,8 +10,7 @@
  * storing snapshots in the database for historical queries.
  */
 
-import { createPublicClient, http, parseAbiItem, type Log, formatUnits } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
+import { createPublicClient, http, parseAbiItem, type Log, formatUnits, defineChain } from 'viem';
 import type {
   SharePriceSnapshot,
   YieldEvent,
@@ -52,6 +51,14 @@ const TREASURY_YIELD_EVENT = parseAbiItem(
   'event TreasuryYieldAccrued(uint256 amount, uint256 newTotalTreasuryYield)'
 );
 
+// Arc chain definition (viem doesn't have Arc built-in yet)
+const arcTestnet = defineChain({
+  id: 5042002,
+  name: 'Arc Testnet',
+  nativeCurrency: { decimals: 18, name: 'USD Coin', symbol: 'USDC' },
+  rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } },
+});
+
 // ============ Pool Indexer Class ============
 
 export class PoolIndexer {
@@ -70,7 +77,7 @@ export class PoolIndexer {
   private onStateUpdate?: (state: IndexerState) => Promise<void>;
 
   constructor(config: PoolIndexerConfig) {
-    const chain = config.chainId === 8453 ? base : baseSepolia;
+    const chain = arcTestnet; // Arc testnet is the default chain
 
     this.config = {
       pollingInterval: 15000, // 15 seconds

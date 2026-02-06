@@ -8,8 +8,14 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title ExecutionPool
- * @notice USDC holding and execution for invoice funding on Base
+ * @notice USDC holding and execution for invoice funding on Arc
  * @dev Receives USDC from LiquidityPool, funds invoices to suppliers,
+ *
+ * Arc Chain Note: On Arc, USDC is the native gas token with 18 decimals at the
+ * protocol level, but the ERC-20 interface at 0x3600000000000000000000000000000000000000
+ * uses 6 decimals. This contract interacts via the ERC-20 interface only, so all amounts
+ * remain in 6-decimal precision. Do NOT use msg.value for USDC transfers on Arc.
+ *
  *      processes repayments from buyers, and returns capital to LiquidityPool
  *
  * Flow:

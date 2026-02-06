@@ -5,9 +5,9 @@
  * based on source chain and token type.
  *
  * Routes:
- * 1. USDC on Base -> Direct deposit (fastest, cheapest)
+ * 1. USDC on Arc -> Direct deposit (fastest, cheapest)
  * 2. USDC on other chains -> CCTP (fast, native USDC, ~15 min)
- * 3. Non-USDC tokens -> LI.FI (flexible, supports any token)
+ * 3. Non-USDC tokens -> LI.FI (flexible, supports any token — not yet on Arc)
  * 4. Fiat -> Circle Gateway (for users without crypto)
  */
 
@@ -55,25 +55,14 @@ interface RouteCalculation {
  * Supported chains configuration
  */
 const SUPPORTED_CHAINS: Record<number, ChainConfig> = {
-  // Base (destination)
-  8453: {
-    chainId: 8453,
-    name: 'Base',
-    cctpDomain: 6,
-    usdcAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    tokenMessenger: '0x1682Ae6375C4E4A97e4B583BC394c861A46D8962',
-    messageTransmitter: '0xAD09780d193884d503182aD4588450C416D6F9D4',
-    supportsLiFi: true,
-  },
-  // Base Sepolia (testnet)
-  84532: {
-    chainId: 84532,
-    name: 'Base Sepolia',
-    cctpDomain: 6,
-    usdcAddress: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-    tokenMessenger: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
-    messageTransmitter: '0x7865fAfC2db2093669d92c0F33AeEF291086BEFD',
-    supportsLiFi: true,
+  // Arc Testnet (destination)
+  5042002: {
+    chainId: 5042002,
+    name: 'Arc Testnet',
+    usdcAddress: '0x3600000000000000000000000000000000000000',
+    tokenMessenger: '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA',
+    messageTransmitter: '0xE737e5cEBEEBa77EFE34D4aa090756590b1CE275',
+    supportsLiFi: false, // LiFi doesn't support Arc yet
   },
   // Ethereum
   1: {
@@ -141,8 +130,8 @@ const SUPPORTED_CHAINS: Record<number, ChainConfig> = {
  * Destination chain (Base mainnet or testnet)
  */
 const DESTINATION_CHAINS = {
-  mainnet: 8453,
-  testnet: 84532,
+  mainnet: 1243,    // Arc mainnet (placeholder)
+  testnet: 5042002, // Arc testnet
 };
 
 export class DepositRoutingService {
@@ -266,7 +255,7 @@ export class DepositRoutingService {
         sourceChain: this.destinationChainId,
         sourceToken: destChainConfig.usdcAddress || '',
         destinationToken: destChainConfig.usdcAddress || '',
-        estimatedGas: '~0.0001 ETH',
+        estimatedGas: '~0.01 USDC',
         estimatedTime: '~30 seconds',
         steps,
       },
@@ -336,7 +325,7 @@ export class DepositRoutingService {
         sourceChain: sourceChain.chainId,
         sourceToken: sourceChain.usdcAddress || '',
         destinationToken: destChain.usdcAddress || '',
-        estimatedGas: '~0.002 ETH total',
+        estimatedGas: '~0.02 USDC total',
         estimatedTime: '~15-20 minutes',
         steps,
       },
@@ -411,7 +400,7 @@ export class DepositRoutingService {
         sourceChain: sourceChain.chainId,
         sourceToken,
         destinationToken: destChain.usdcAddress || '',
-        estimatedGas: '~0.005 ETH total',
+        estimatedGas: '~0.05 USDC total',
         estimatedTime: needsSwap ? '~10-40 minutes' : '~5-30 minutes',
         steps,
       },

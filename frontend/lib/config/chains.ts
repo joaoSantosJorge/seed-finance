@@ -11,30 +11,30 @@ export const anvil = defineChain({
   testnet: true,
 });
 
-// Base Sepolia (Testnet)
-export const baseSepolia = defineChain({
-  id: 84532,
-  name: 'Base Sepolia',
-  nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
+// Arc Testnet
+export const arcTestnet = defineChain({
+  id: 5042002,
+  name: 'Arc Testnet',
+  nativeCurrency: { decimals: 18, name: 'USD Coin', symbol: 'USDC' },
   rpcUrls: {
-    default: { http: ['https://sepolia.base.org'] },
+    default: { http: ['https://rpc.testnet.arc.network'] },
   },
   blockExplorers: {
-    default: { name: 'BaseScan', url: 'https://sepolia.basescan.org' },
+    default: { name: 'ArcScan', url: 'https://testnet.arcscan.app' },
   },
   testnet: true,
 });
 
-// Base Mainnet
-export const baseMainnet = defineChain({
-  id: 8453,
-  name: 'Base',
-  nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
+// Arc Mainnet (placeholder — mainnet not yet live)
+export const arcMainnet = defineChain({
+  id: 1243,
+  name: 'Arc',
+  nativeCurrency: { decimals: 18, name: 'USD Coin', symbol: 'USDC' },
   rpcUrls: {
-    default: { http: ['https://mainnet.base.org'] },
+    default: { http: ['https://rpc.arc.network'] },
   },
   blockExplorers: {
-    default: { name: 'BaseScan', url: 'https://basescan.org' },
+    default: { name: 'ArcScan', url: 'https://arcscan.app' },
   },
   testnet: false,
 });

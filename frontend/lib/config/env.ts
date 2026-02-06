@@ -3,7 +3,7 @@ import {
   type EnvironmentConfig,
   type AppConfig,
 } from './types';
-import { anvil, baseSepolia, baseMainnet } from './chains';
+import { anvil, arcTestnet, arcMainnet } from './chains';
 import { getContractAddresses } from './contracts';
 
 function getEnvironment(): Environment {
@@ -23,18 +23,18 @@ const configs: Record<Environment, Omit<EnvironmentConfig, 'contracts'>> = {
   },
   testnet: {
     name: 'testnet',
-    displayName: 'Base Sepolia',
-    chain: baseSepolia,
-    rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || 'https://sepolia.base.org',
-    explorer: { name: 'BaseScan', url: 'https://sepolia.basescan.org' },
+    displayName: 'Arc Testnet',
+    chain: arcTestnet,
+    rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || 'https://rpc.testnet.arc.network',
+    explorer: { name: 'ArcScan', url: 'https://testnet.arcscan.app' },
     features: { treasuryEnabled: true, mockData: false, debugMode: true },
   },
   production: {
     name: 'production',
-    displayName: 'Base Mainnet',
-    chain: baseMainnet,
-    rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || 'https://mainnet.base.org',
-    explorer: { name: 'BaseScan', url: 'https://basescan.org' },
+    displayName: 'Arc Mainnet',
+    chain: arcMainnet,
+    rpcUrl: process.env.NEXT_PUBLIC_RPC_URL || 'https://rpc.arc.network',
+    explorer: { name: 'ArcScan', url: 'https://arcscan.app' },
     features: { treasuryEnabled: true, mockData: false, debugMode: false },
   },
 };

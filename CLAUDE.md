@@ -67,7 +67,7 @@ How to test this feature (commands, expected results).
 
 ## Project Overview
 
-**Seed Finance** is a decentralized **reverse factoring** (supply chain finance) protocol on **Base L2**. It solves a fundamental cash flow problem: suppliers typically wait 30-60 days to get paid by buyers. Seed Finance enables suppliers to receive immediate payment on approved invoices while buyers maintain their original payment terms.
+**Seed Finance** is a decentralized **reverse factoring** (supply chain finance) protocol on **Arc chain** (Circle's L1 for stablecoin finance). It solves a fundamental cash flow problem: suppliers typically wait 30-60 days to get paid by buyers. Seed Finance enables suppliers to receive immediate payment on approved invoices while buyers maintain their original payment terms.
 
 ### How It Works
 
@@ -105,16 +105,18 @@ Layer 3: SETTLEMENT
 
 | Component | Technology |
 |-----------|------------|
-| **Blockchain** | Base L2 (Sepolia testnet / Mainnet) |
+| **Blockchain** | Arc chain (Testnet / Mainnet) |
 | **Contracts** | Solidity 0.8.26, Foundry, ERC-4626, EIP-2535 |
 | **Frontend** | Next.js 14, Tailwind CSS, Wagmi, Viem, RainbowKit |
 | **Backend** | TypeScript, ethers.js, Circle SDK |
 | **Token** | USDC (6 decimals) |
 
-### Key Addresses (Base Sepolia)
+### Key Addresses (Arc Testnet)
 
-- USDC: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
-- Explorer: https://sepolia.basescan.org
+- USDC: `0x3600000000000000000000000000000000000000` (system contract, 6 decimals via ERC-20)
+- USYC: `0xe9185F0c5F296Ed1797AaE4238D26CCaBEadb86C`
+- Explorer: https://testnet.arcscan.app
+- Faucet: https://faucet.circle.com
 
 ### Project Structure
 
