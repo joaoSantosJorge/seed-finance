@@ -32,8 +32,8 @@ contract MockStrategy is ITreasuryStrategy {
         require(msg.sender == treasuryManager, "Only manager");
         require(isActive, "Not active");
 
-        // TreasuryManager uses push pattern: funds are transferred BEFORE calling deposit()
-        // So we just record the deposit, no need to pull
+        // Pull funds from TreasuryManager (approved at addStrategy)
+        _asset.safeTransferFrom(msg.sender, address(this), amount);
         totalDeposited += amount;
 
         emit Deposited(msg.sender, amount, amount);

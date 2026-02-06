@@ -571,8 +571,7 @@ contract TreasuryManager is AccessControl, ReentrancyGuard, Pausable {
                 uint256 allocation = (amount * info.weight) / totalWeight;
 
                 if (allocation > 0 && allocation <= remaining) {
-                    // Transfer and deposit
-                    asset.safeTransfer(strategy, allocation);
+                    // Strategy pulls funds via safeTransferFrom (approved at addStrategy)
                     ITreasuryStrategy(strategy).deposit(allocation);
 
                     info.deposited += allocation;
@@ -591,7 +590,6 @@ contract TreasuryManager is AccessControl, ReentrancyGuard, Pausable {
                 StrategyInfo storage info = strategyInfo[strategy];
 
                 if (info.exists && info.active) {
-                    asset.safeTransfer(strategy, remaining);
                     ITreasuryStrategy(strategy).deposit(remaining);
                     info.deposited += remaining;
                     emit StrategyDeposit(strategy, remaining);
