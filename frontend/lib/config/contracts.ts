@@ -14,7 +14,7 @@ const defaults: Record<Environment, ContractAddresses> = {
   testnet: {
     usdc: '0x3600000000000000000000000000000000000000' as Address,
     liquidityPool: '0xb67db96eebf1d30d95a382535afbb2375ecf0219' as Address,
-    treasuryManager: ZERO,
+    treasuryManager: '0x4815708E786d7355D460CcA07158866B28338885' as Address,
     invoiceDiamond: '0xe73911fbe91a0f76b20b53a8bd7d4c84c5532da6' as Address,
     executionPool: '0xf1389407cb618990b838d549c226de9ec2d447f0' as Address,
   },
