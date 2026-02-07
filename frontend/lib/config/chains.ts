@@ -6,7 +6,7 @@ export const anvil = defineChain({
   name: 'Anvil Local',
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
   rpcUrls: {
-    default: { http: ['http://localhost:8545'] },
+    default: { http: [process.env.NEXT_PUBLIC_RPC_URL || 'http://localhost:8545'] },
   },
   testnet: true,
 });

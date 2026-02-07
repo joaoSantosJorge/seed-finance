@@ -59,6 +59,14 @@ const arcTestnet = defineChain({
   rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } },
 });
 
+// Anvil local development chain
+const anvilChain = defineChain({
+  id: 31337,
+  name: 'Anvil',
+  nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
+  rpcUrls: { default: { http: ['http://127.0.0.1:8545'] } },
+});
+
 // ============ Pool Indexer Class ============
 
 export class PoolIndexer {
@@ -77,7 +85,7 @@ export class PoolIndexer {
   private onStateUpdate?: (state: IndexerState) => Promise<void>;
 
   constructor(config: PoolIndexerConfig) {
-    const chain = arcTestnet; // Arc testnet is the default chain
+    const chain = config.chainId === 31337 ? anvilChain : arcTestnet;
 
     this.config = {
       pollingInterval: 15000, // 15 seconds

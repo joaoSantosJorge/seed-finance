@@ -15,7 +15,7 @@ export const wagmiConfig = getDefaultConfig({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   chains: chains as any,
   transports: {
-    [anvil.id]: http(undefined, { batch: true }),
+    [anvil.id]: http(rpcUrl, { batch: true }),
     [arcTestnet.id]: http(rpcUrl, { batch: true }),
     [arcMainnet.id]: http(rpcUrl, { batch: true }),
   },

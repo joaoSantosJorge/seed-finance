@@ -10,6 +10,7 @@
     "indexer": "tsx src/indexer/runIndexer.ts",
     "indexer:dev": "tsx watch src/indexer/runIndexer.ts",
     "start": "tsx src/indexer/runIndexer.ts",
+    "reset-db": "tsx src/indexer/resetDb.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {
