@@ -100,7 +100,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-slate-800 mt-24">
         <div className="max-w-7xl mx-auto px-6 py-8 text-center text-cool-gray text-body-sm">
-          <p>&copy; 2026 Seed Finance. Built on Base.</p>
+          <p>&copy; 2026 Seed Finance. Built on Arc.</p>
         </div>
       </footer>
     </div>
