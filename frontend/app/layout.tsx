@@ -17,8 +17,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Seed Finance | Liquidity Provider Dashboard',
-  description: 'Earn yield by providing liquidity to the Seed Finance reverse factoring protocol on Base.',
+  title: 'Seed Finance | Decentralized Reverse Factoring',
+  description: 'Decentralized reverse factoring protocol on Arc. Supply chain finance powered by USDC.',
   icons: {
     icon: '/favicon.ico',
   },
