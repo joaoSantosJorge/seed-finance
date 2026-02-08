@@ -237,6 +237,140 @@
     content: '█';
     animation: blink 1s step-end infinite;
   }
+
+  /* Retro prose styling for markdown content */
+  .prose-retro {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    font-size: 14px;
+  }
+
+  .prose-retro h1,
+  .prose-retro h2,
+  .prose-retro h3,
+  .prose-retro h4,
+  .prose-retro h5,
+  .prose-retro h6 {
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .prose-retro h1 { font-size: 22px; }
+  .prose-retro h2 { font-size: 18px; }
+  .prose-retro h3 { font-size: 16px; }
+  .prose-retro h4 { font-size: 14px; border-bottom: 1px solid var(--border-color); }
+
+  .prose-retro p {
+    margin-bottom: 1rem;
+  }
+
+  .prose-retro a {
+    color: var(--text-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .prose-retro a:hover {
+    color: var(--text-secondary);
+  }
+
+  .prose-retro strong {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  .prose-retro ul,
+  .prose-retro ol {
+    padding-left: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .prose-retro ul {
+    list-style-type: '- ';
+  }
+
+  .prose-retro ol {
+    list-style-type: decimal;
+  }
+
+  .prose-retro li {
+    margin-bottom: 0.35rem;
+  }
+
+  .prose-retro li::marker {
+    color: var(--text-muted);
+  }
+
+  .prose-retro hr {
+    border: none;
+    border-top: 2px solid var(--border-color);
+    margin: 2rem 0;
+  }
+
+  .prose-retro blockquote {
+    border-left: 3px solid var(--border-color);
+    padding-left: 1rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 1rem 0;
+  }
+
+  .prose-retro code {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 0.15em 0.4em;
+    font-size: 13px;
+    font-family: 'Courier Prime', monospace;
+  }
+
+  .prose-retro pre {
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+
+  .prose-retro pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 13px;
+  }
+
+  .prose-retro table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 13px;
+  }
+
+  .prose-retro th {
+    text-align: left;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bg-secondary);
+  }
+
+  .prose-retro td {
+    border: 2px solid var(--border-color);
+    padding: 0.5rem 0.75rem;
+  }
+
+  .prose-retro img {
+    display: inline-block;
+    margin: 0 0.25rem;
+  }
 }
 
 /* Skeleton animation - retro style */
