@@ -30,11 +30,14 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-deep-navy flex flex-col">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
         {/* ASCII Logo */}
-        <pre className="text-seed-green text-[10px] sm:text-xs md:text-sm leading-tight font-mono select-none mb-12 text-center">
+        <pre
+          className="text-[var(--text-primary)] leading-tight select-none mb-2 text-center"
+          style={{ fontSize: '14px' }}
+        >
 {`  ____  ____  ____  ____
  / ___)(  __)(  __)(    \\
  \\___ \\ ) _)  ) _)  ) D (
@@ -46,6 +49,11 @@ export default function HomePage() {
   (__)  (__)(_)\\_) (_)(_) (_)\\_) \\___)(____)`.trim()}
         </pre>
 
+        {/* Subtitle */}
+        <p className="text-xs uppercase tracking-[0.15em] text-[var(--text-secondary)] mb-12">
+          Seed Finance — For Supply Chain Finance
+        </p>
+
         {/* App Boxes */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl w-full">
           {apps.map((app) => {
@@ -54,13 +62,17 @@ export default function HomePage() {
               <Link
                 key={app.href}
                 href={app.href}
-                className="group border border-slate-700 rounded-xl p-6 hover:border-seed-green/60 transition-colors bg-slate-900/40"
+                className="group bg-[var(--bg-card)] border-2 border-[var(--border-color)] p-6 transition-all duration-150 hover:shadow-[4px_4px_0_var(--border-color)] hover:-translate-x-0.5 hover:-translate-y-0.5"
               >
-                <div className="w-10 h-10 rounded-lg bg-seed-green/10 flex items-center justify-center mb-4 group-hover:bg-seed-green/20 transition-colors">
-                  <Icon className="w-5 h-5 text-seed-green" />
+                <div className="mb-4">
+                  <Icon className="w-5 h-5 text-[var(--text-primary)]" />
                 </div>
-                <h2 className="text-lg font-semibold text-white mb-1">{app.title}</h2>
-                <p className="text-sm text-cool-gray leading-relaxed">{app.description}</p>
+                <h2 className="text-lg font-bold uppercase tracking-wider text-[var(--text-primary)] mb-1">
+                  {app.title}
+                </h2>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                  {app.description}
+                </p>
               </Link>
             );
           })}
@@ -68,8 +80,8 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-6 py-6 text-center text-cool-gray text-sm">
+      <footer className="border-t-2 border-[var(--border-color)]">
+        <div className="max-w-7xl mx-auto px-6 py-6 text-center text-[var(--text-muted)] text-sm">
           <p>&copy; 2026 Seed Finance. Built on Arc.</p>
         </div>
       </footer>
