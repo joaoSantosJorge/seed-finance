@@ -16,7 +16,7 @@ On-chain supply chain finance — suppliers get paid instantly, buyers keep thei
 
 Suppliers typically wait **30–60 days** to get paid after delivering goods. This cash flow gap kills small businesses and slows supply chains globally.
 
-Seed Finance solves this with **on-chain reverse factoring**: once a buyer approves an invoice, the supplier receives immediate USDC payment from a liquidity pool — no banks, no intermediaries, no 5-day settlement windows.
+Seed Finance solves this with **on-chain reverse factoring**: once a buyer approves an invoice, the supplier can receive immediate USDC payment from a liquidity pool — no banks, no intermediaries, no 5-day settlement windows.
 
 | Participant | What They Get |
 |---|---|
