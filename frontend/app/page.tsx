@@ -1,7 +1,15 @@
+import fs from 'fs';
+import path from 'path';
 import Link from 'next/link';
 import { FileText, CheckCircle, TrendingUp, Settings } from 'lucide-react';
+import { MarkdownContent } from '@/components/ui/MarkdownContent';
 
 export default function HomePage() {
+  const readmeContent = fs.readFileSync(
+    path.join(process.cwd(), '..', 'README.md'),
+    'utf-8'
+  );
+
   const apps = [
     {
       title: "Supplier's App",
@@ -32,7 +40,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
       {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+      <main className="flex-1 flex flex-col items-center px-6 py-12">
         {/* ASCII Logo */}
         <pre
           className="text-[var(--text-primary)] leading-tight select-none mb-2 text-center"
@@ -77,6 +85,40 @@ export default function HomePage() {
             );
           })}
         </div>
+
+        {/* Demo Video */}
+        <section className="max-w-3xl w-full mt-16">
+          <div className="border-2 border-[var(--border-color)] bg-[var(--bg-card)]">
+            <div className="border-b-2 border-[var(--border-color)] px-4 py-2">
+              <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[var(--text-primary)] text-center">
+                — Demo —
+              </h2>
+            </div>
+            <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+              <iframe
+                className="absolute inset-0 w-full h-full"
+                src="https://www.youtube.com/embed/PvUzRfTTapc"
+                title="Seed Finance Demo"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* README / Documentation */}
+        <section className="max-w-3xl w-full mt-16">
+          <div className="border-2 border-[var(--border-color)] bg-[var(--bg-card)]">
+            <div className="border-b-2 border-[var(--border-color)] px-4 py-2">
+              <h2 className="text-sm font-bold uppercase tracking-[0.15em] text-[var(--text-primary)] text-center">
+                — Documentation —
+              </h2>
+            </div>
+            <div className="p-6">
+              <MarkdownContent content={readmeContent} />
+            </div>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
