@@ -76,7 +76,7 @@ How to test this feature (commands, expected results).
 3. **Liquidity Providers (LPs)** deposit USDC into an ERC-4626 vault and receive SEED share tokens
 4. **Operators** (backend) trigger funding when invoices are approved
 5. **Suppliers** receive immediate payment (funded from LP pool)
-6. **Buyers** repay at maturity with a fee
+6. **Buyers** repay the original invoice amount at maturity
 7. **LPs** earn yield automatically through increasing share price
 
 ### Core Architecture

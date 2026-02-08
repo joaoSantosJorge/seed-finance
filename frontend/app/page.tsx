@@ -5,10 +5,22 @@ import { FileText, CheckCircle, TrendingUp, Settings } from 'lucide-react';
 import { MarkdownContent } from '@/components/ui/MarkdownContent';
 
 export default function HomePage() {
-  const readmeContent = fs.readFileSync(
-    path.join(process.cwd(), '..', 'README.md'),
-    'utf-8'
-  );
+  let readmeContent = '';
+  try {
+    readmeContent = fs.readFileSync(
+      path.join(process.cwd(), 'README.md'),
+      'utf-8'
+    );
+  } catch {
+    try {
+      readmeContent = fs.readFileSync(
+        path.join(process.cwd(), '..', 'README.md'),
+        'utf-8'
+      );
+    } catch {
+      readmeContent = '*Documentation available on [GitHub](https://github.com/your-org/seed-finance).*';
+    }
+  }
 
   const apps = [
     {
