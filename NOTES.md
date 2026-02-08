@@ -1,16 +1,4 @@
-This has been 1 day of work. Imagine what I can do in 100 days of work. Imagine what this can become with 1000 days of work. Imagine what this can become with 10 000 days of work.
-
-
-Strategies dashboard:
-1. add or remove strategy
-2. change allocation percentage
-3. (un)pause contracts
-4. change admin, strategiest...
-
-Suppliers, clients dashboard:
-1. view clients, suppliers
-2. blacklist clients, suppliers
-3. what else?
+WHAT YOU DO ON DEV YOU DO ON PROD
 
 
 TODO
@@ -21,16 +9,11 @@ TODO
 [x] - time problem...
 [x] - supplier dashboard
 [x] - buyer dashboard
-[ ] - operator dashboard -> allocate funds to strategy
-[ ] - yield calculation and strategies
-[ ] - DB and phase 3
-[ ] - strategies dashboard
-[ ] - ARC and usdc
-[ ] - deploy backend and frontend in cloud (keep working with anvil)
-[ ] - cash flow window. what does it look like?
-[ ] - videos
-[ ] - presentation
-[ ] - 
+[x] - deploy contract in cloud
+[x] - accounts: operator/admin/deployer, financier1, financier2, supplier1, supplier2, supplier3, buyer1, buyer2, buyer3
+[ ] - learn to record screen (record supplier, buyer, financier, operator) - see how long it takes
+[ ] - record presentation
+[ ] - readme file in github
 
 
 
@@ -38,7 +21,7 @@ ONCE YOU FINISH SEED FINANCE MVP
 [ ] - square game
 [ ] - videos
 [ ] - personal page
-[ ] - 
+[ ] - clawdbot
 [ ] - 
 [ ] - extensive document on hires, budget needed, everything - apply to VC firms
 [ ] - YC videos, prepare rough budget and planning for next months
@@ -47,3 +30,4 @@ ONCE YOU FINISH SEED FINANCE MVP
 Questions to answer partners:
 [ ] - How are the fees calculated?
 [ ] - How are interest rates calculated?
+

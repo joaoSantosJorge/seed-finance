@@ -86,7 +86,7 @@ export function Sidebar({ navigation }: SidebarProps) {
       {/* Status */}
       <div className="p-4 border-t-2 border-[var(--border-color)] text-xs text-[var(--text-muted)]">
         <p>STATUS: <span className="text-[var(--text-primary)]">CONNECTED</span></p>
-        <p>NETWORK: <span className="text-[var(--text-primary)]">BASE</span></p>
+        <p>NETWORK: <span className="text-[var(--text-primary)]">ARC</span></p>
       </div>
     </aside>
   );

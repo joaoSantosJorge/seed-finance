@@ -259,3 +259,18 @@ forge script script/TestWorkflow.s.sol:TestWorkflow --rpc-url http://localhost:8
 > The protocol is fully functional on testnet. Every line of code is tested. The frontend connects to live contracts. And the entire deployment — from zero to fully operational — runs with a single Foundry script.
 >
 > Questions?"
+
+
+
+
+## Extra text
+
+Supply chain finance is a broad set of financing techniques that optimize cash flow between buyers and suppliers in a trade relationship. The core tension it addresses: buyers want to pay as late as possible (to preserve their own working capital), while suppliers want to get paid as soon as possible (for the same reason). These competing interests create friction, especially when there's a power imbalance — large buyers can impose long payment terms (60, 90, even 120 days) on smaller suppliers who can't easily absorb that delay.
+Reverse factoring (also called approved payables finance or supplier finance) is one of the most important tools within supply chain finance. Here's how it works and what problem it solves:
+In a traditional setup, a supplier delivers goods, issues an invoice with (say) 90-day terms, and waits. If the supplier needs cash sooner, they can try to factor that invoice — selling it to a bank at a discount. But the discount rate is based on the supplier's credit risk, which for a small supplier can be quite high, making it expensive.
+Reverse factoring flips this. The buyer (typically a large, creditworthy company) sets up a program with a bank or platform. Once the buyer approves an invoice, the supplier can request early payment from the bank. The critical difference is that the financing is priced based on the buyer's credit rating, not the supplier's. Since the buyer is usually a much stronger credit, the discount rate is significantly lower.
+The result is a win for all three parties. The supplier gets paid early and cheaply, improving their liquidity and reducing their risk of cash shortfalls. The buyer can maintain or even extend their payment terms without squeezing suppliers — and may strengthen supplier relationships and supply chain stability. The bank earns a fee on low-risk, short-duration financing backed by a creditworthy obligor.
+The core problem reverse factoring solves is the credit asymmetry problem in trade finance: small suppliers historically couldn't access affordable short-term financing because their own credit profile didn't justify it, even though they were owed money by highly creditworthy counterparties. Reverse factoring lets the buyer's creditworthiness flow through to benefit the supplier, unlocking cheaper capital throughout the supply chain.
+One caveat worth noting: reverse factoring attracted scrutiny after the Greensill Capital collapse and some high-profile accounting concerns (like with Carillion). The main risk is that if these programs are used aggressively to stretch payment terms far beyond normal, they can mask a buyer's true liabilities — the payables may look like ordinary trade payables on the balance sheet when they're functionally more like bank debt.
+
+
